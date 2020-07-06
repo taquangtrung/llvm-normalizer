@@ -1,3 +1,15 @@
-# llvm-transfomer
+llvm-normalizer
+--------------------------------
 
-A LLVM bitcode transformer to support the Discover analyzer
+A LLVM bitcode normalizer to support the Discover analyzer
+
+# Installation
+
+- Modify the file `CMakeLists.txt` to set `LLVM_ROOT`
+
+```
+mkdir build
+cd build
+cmake ../
+make
+```
