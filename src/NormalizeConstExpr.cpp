@@ -37,16 +37,17 @@ bool NormalizeConstExpr::runOnModule(Module &M) {
 }
 
 bool NormalizeConstExpr::normalizeModule(Module &M) {
-  NormalizeConstExpr *pass;
-  return pass->runOnModule(M);
+  NormalizeConstExpr pass;
+  return pass.runOnModule(M);
 }
 
 static RegisterPass<NormalizeConstExpr> X("NormalizeConstExpr",
-                                              "Normalize ConstantExpr",
-                                              false /* Only looks at CFG */,
-                                              false /* Analysis Pass */);
+                                          "Normalize ConstantExpr",
+                                          false /* Only looks at CFG */,
+                                          false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
                                    legacy::PassManagerBase &PM) {
-                                  PM.add(new NormalizeConstExpr());});
+                                  PM.add(new NormalizeConstExpr());
+                                });
