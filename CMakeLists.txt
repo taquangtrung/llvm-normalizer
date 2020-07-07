@@ -15,3 +15,6 @@ include(FindLLVM)
 # include(FindClang)
 
 add_subdirectory(src)
+
+# TODO: copy binary to the root folder
+# config_file()
