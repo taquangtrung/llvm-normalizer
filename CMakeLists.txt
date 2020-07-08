@@ -18,10 +18,18 @@ set(LLVM_ROOT "/usr/lib/llvm-8")
 # Find LLVM
 include(FindLLVM)
 
-# Find other third-party libraries
+# Setting for third-party libraries
 set(EXTERNAL_LIB_DIRS "${CMAKE_CURRENT_LIST_DIR}/lib/")
 
+# Setting for backtrace
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
+
 add_subdirectory(src)
+
+# To support backward debugging trace
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")
 
 # TODO: copy binary to the root folder
 # config_file()

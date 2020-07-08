@@ -8,7 +8,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "cxxopts/cxxopts.hpp"
-
 #include "NormalizeConstExpr.h"
 
 using namespace std;

@@ -8,5 +8,7 @@ include_directories(${EXTERNAL_LIB_DIRS})
 
 add_library(LLVMNormalizeConstExpr MODULE NormalizeConstExpr.cpp)
 
-add_executable(normalizer ${SOURCE_FILES})
+add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
 target_link_libraries(normalizer ${LLVM_LIBS})
+
+add_backward(normalizer)
