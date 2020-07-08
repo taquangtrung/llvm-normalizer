@@ -9,6 +9,11 @@ include_directories(${EXTERNAL_LIB_DIRS})
 add_library(LLVMNormalizeConstExpr MODULE NormalizeConstExpr.cpp)
 
 add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
+add_backward(normalizer)
 target_link_libraries(normalizer ${LLVM_LIBS})
 
-add_backward(normalizer)
+# Deploy after build
+add_custom_command(TARGET normalizer POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  -E copy $<TARGET_FILE:normalizer> ${PROJECT_BINARY_DIR}/normalizer
+  COMMENT "Deployed to:\n${PROJECT_BINARY_DIR}/normalizer")
