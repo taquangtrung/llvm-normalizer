@@ -1,3 +1,8 @@
+#
+# Author: Ta Quang Trung
+# Date:   July 6th, 2020
+#
+
 cmake_minimum_required(VERSION 3.0.0)
 
 # set cmake dirs
@@ -10,9 +15,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 # predefine LLVM_ROOT
 set(LLVM_ROOT "/usr/lib/llvm-8")
 
-# find llvm, clang
+# Find LLVM
 include(FindLLVM)
-# include(FindClang)
+
+# Find other third-party libraries
+set(EXTERNAL_LIB_DIRS "${CMAKE_CURRENT_LIST_DIR}/lib/")
 
 add_subdirectory(src)
 
