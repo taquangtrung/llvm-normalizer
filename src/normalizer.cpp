@@ -26,7 +26,7 @@ Arguments parseArguments(int argc, char** argv) {
   Arguments args;
 
   // Parse arguments
-  cxxopts::Options options("LLVM-Normalizer", "One line description of Discover");
+  cxxopts::Options options("normalizer", "Options of normalizer");
   options.add_options()
     ("input", "Input file", cxxopts::value<std::string>())
     ("output", "Output file", cxxopts::value<std::string>())
@@ -104,5 +104,5 @@ int main(int argc, char** argv) {
     OS.flush();
   }
 
-  return 1;
+  return 0;
 }
