@@ -8,8 +8,13 @@ include_directories(${EXTERNAL_LIB_DIRS})
 
 add_library(LLVMNormalizeConstExpr MODULE NormalizeConstExpr.cpp)
 
-add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
-add_backward(normalizer)
+if (APPLE)
+  add_executable(normalizer ${SOURCE_FILES})
+else()
+  add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
+  add_backward(normalizer)
+endif()
+
 target_link_libraries(normalizer ${LLVM_LIBS})
 
 # Deploy after build

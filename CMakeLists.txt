@@ -18,7 +18,7 @@ set(
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
 # predefine LLVM_ROOT
-set(LLVM_ROOT "/usr/lib/llvm-8")
+set(LLVM_ROOT "/usr/local/opt/llvm@8")
 
 # Find LLVM
 include(FindLLVM)
@@ -29,7 +29,9 @@ message(STATUS "Set lib directory:")
 message(STATUS "   ${EXTERNAL_LIB_DIRS}")
 
 # Setting for backtrace
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
+if(NOT APPLE)
+  add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
+endif()
 
 # Now adding source code
 add_subdirectory(src)
