@@ -1,12 +1,12 @@
 set(SOURCE_FILES
-  normalizer.cpp
-  NormalizeConstExpr.cpp)
+  Normalizer.cpp
+  UninlineConstExpr.cpp)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${EXTERNAL_LIB_DIRS})
 # add_definitions(${LLVM_DEFINITIONS})
 
-add_library(LLVMNormalizeConstExpr MODULE NormalizeConstExpr.cpp)
+add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
 
 if (APPLE)
   add_executable(normalizer ${SOURCE_FILES})

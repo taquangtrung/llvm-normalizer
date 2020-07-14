@@ -19,11 +19,11 @@ using BasicBlockListType = SymbolTableList<BasicBlock>;
 
 namespace discover {
 
-struct NormalizeConstExpr : public ModulePass {
+struct UninlineConstExpr : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  NormalizeConstExpr() : ModulePass(ID) {}
+  UninlineConstExpr() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

@@ -10,7 +10,7 @@
 // #include "cxxopts/cxxopts.hpp"
 #include "cxxopts/cxxopts.hpp"
 
-#include "NormalizeConstExpr.h"
+#include "UninlineConstExpr.h"
 
 using namespace std;
 using namespace llvm;
@@ -62,7 +62,7 @@ Arguments parseArguments(int argc, char** argv) {
 }
 
 bool normalizeModule(Module& module) {
-  return NormalizeConstExpr::normalizeModule(module);
+  return UninlineConstExpr::normalizeModule(module);
 }
 
 
