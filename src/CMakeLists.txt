@@ -1,12 +1,10 @@
 set(SOURCE_FILES
-  normalizer.cpp
-  NormalizeConstExpr.cpp)
+  Normalizer.cpp
+  UninlineConstExpr.cpp)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${EXTERNAL_LIB_DIRS})
 # add_definitions(${LLVM_DEFINITIONS})
-
-
 
 llvm_map_components_to_libnames(llvm_libs 
         asmparser core linker bitreader 
@@ -14,8 +12,8 @@ llvm_map_components_to_libnames(llvm_libs
         analysis target mc support passes interpreter 
         executionengine nativecodegen )
 
+add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
 
-add_library(LLVMNormalizeConstExpr MODULE NormalizeConstExpr.cpp)
 if (APPLE)
   add_executable(normalizer ${SOURCE_FILES})
 else()
@@ -24,7 +22,7 @@ else()
 endif()
 
 target_link_libraries(normalizer ${llvm_libs})
-target_link_libraries(LLVMNormalizeConstExpr ${llvm_libs} )
+target_link_libraries(LLVMUninlineConstExpr ${llvm_libs} )
 
 # Deploy after build
 add_custom_command(TARGET normalizer POST_BUILD

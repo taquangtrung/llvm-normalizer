@@ -10,7 +10,7 @@
 // #include "cxxopts/cxxopts.hpp"
 #include "cxxopts/cxxopts.hpp"
 
-#include "NormalizeConstExpr.h"
+#include "UninlineConstExpr.h"
 
 using namespace std;
 using namespace llvm;
@@ -26,7 +26,7 @@ Arguments parseArguments(int argc, char** argv) {
   Arguments args;
 
   // Parse arguments
-  cxxopts::Options options("LLVM-Normalizer", "One line description of Discover");
+  cxxopts::Options options("normalizer", "Options of normalizer");
   options.add_options()
     ("input", "Input file", cxxopts::value<std::string>())
     ("output", "Output file", cxxopts::value<std::string>())
@@ -62,7 +62,7 @@ Arguments parseArguments(int argc, char** argv) {
 }
 
 bool normalizeModule(Module& module) {
-  return NormalizeConstExpr::normalizeModule(module);
+  return UninlineConstExpr::normalizeModule(module);
 }
 
 
@@ -104,5 +104,5 @@ int main(int argc, char** argv) {
     OS.flush();
   }
 
-  return 1;
+  return 0;
 }

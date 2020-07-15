@@ -1,11 +1,11 @@
-#include "NormalizeConstExpr.h"
+#include "UninlineConstExpr.h"
 
 using namespace discover;
 using namespace llvm;
 
-char NormalizeConstExpr::ID = 0;
+char UninlineConstExpr::ID = 0;
 
-bool NormalizeConstExpr::runOnModule(Module &M) {
+bool UninlineConstExpr::runOnModule(Module &M) {
   FunctionListType &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
@@ -36,12 +36,12 @@ bool NormalizeConstExpr::runOnModule(Module &M) {
   return true;
 }
 
-bool NormalizeConstExpr::normalizeModule(Module &M) {
-  NormalizeConstExpr pass;
+bool UninlineConstExpr::normalizeModule(Module &M) {
+  UninlineConstExpr pass;
   return pass.runOnModule(M);
 }
 
-static RegisterPass<NormalizeConstExpr> X("NormalizeConstExpr",
+static RegisterPass<UninlineConstExpr> X("UninlineConstExpr",
                                           "Normalize ConstantExpr",
                                           false /* Only looks at CFG */,
                                           false /* Analysis Pass */);
@@ -49,5 +49,5 @@ static RegisterPass<NormalizeConstExpr> X("NormalizeConstExpr",
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
                                    legacy::PassManagerBase &PM) {
-                                  PM.add(new NormalizeConstExpr());
+                                  PM.add(new UninlineConstExpr());
                                 });
