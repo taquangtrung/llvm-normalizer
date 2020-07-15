@@ -28,14 +28,11 @@ A LLVM bitcode normalizer to support the Discover analyzer
   + In macOS: `set(LLVM_ROOT "/usr/local/Cellar/...")` (Need to update this
     part).
 
-<<<<<<< HEAD
 
 - update 
  + Add the llvm bin path to PATH
  + Eg: Add export PATH="/usr/local/opt/llvm/bin:$PATH" in  ~/.bash_profile
 
-=======
->>>>>>> upstream/master
 - Build by CMake:
 
   ```
