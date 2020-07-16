@@ -26,11 +26,23 @@ set(
   CACHE PATH  "The the path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
-# Set LLVM Version
+# Set LLVM version
 set(LLVM_VERSION 8)
+message (STATUS "Looking for LLVM ${LLVM_VERSION}")
+
+# Set LLVM preferred path
+set(LLVM_CMAKE_PATH_HINTS
+  # Linux
+  "/usr/lib/llvm/lib/cmake/llvm/"
+  "/usr/lib/llvm-8/lib/cmake/llvm/"
+  # MacOS
+  "/usr/local/opt/llvm/lib/cmake/llvm/"
+  "/usr/local/opt/llvm@8/lib/cmake/llvm/")
 
 # config llvm
-find_package(LLVM ${LLVM_VERSION} REQUIRED CONFIG)
+find_package(LLVM ${LLVM_VERSION}
+  HINTS ${LLVM_CMAKE_PATH_HINTS}
+  REQUIRED CONFIG)
 
 if (NOT LLVM_DIR)
   message (FATAL_ERROR "Could not find LLVM CMake files")
