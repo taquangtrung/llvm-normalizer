@@ -6,6 +6,12 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${EXTERNAL_LIB_DIRS})
 # add_definitions(${LLVM_DEFINITIONS})
 
+llvm_map_components_to_libnames(llvm_libs 
+        asmparser core linker bitreader 
+        bitwriter irreader ipo scalaropts
+        analysis target mc support passes interpreter 
+        executionengine nativecodegen )
+
 add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
 
 if (APPLE)
@@ -15,7 +21,8 @@ else()
   add_backward(normalizer)
 endif()
 
-target_link_libraries(normalizer ${LLVM_LIBS})
+target_link_libraries(normalizer ${llvm_libs})
+target_link_libraries(LLVMUninlineConstExpr ${llvm_libs} )
 
 # Deploy after build
 add_custom_command(TARGET normalizer POST_BUILD
