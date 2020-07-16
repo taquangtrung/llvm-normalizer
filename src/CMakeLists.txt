@@ -2,15 +2,10 @@ set(SOURCE_FILES
   Normalizer.cpp
   UninlineConstExpr.cpp)
 
-include_directories(${LLVM_INCLUDE_DIRS})
-include_directories(${EXTERNAL_LIB_DIRS})
-# add_definitions(${LLVM_DEFINITIONS})
-
-llvm_map_components_to_libnames(llvm_libs 
-        asmparser core linker bitreader 
-        bitwriter irreader ipo scalaropts
-        analysis target mc support passes interpreter 
-        executionengine nativecodegen )
+# Relevant LLVM Components can be found by: llvm-config --components
+llvm_map_components_to_libnames(LLVM_LIBS
+  asmparser core bitreader
+  bitwriter irreader ipo scalaropts)
 
 add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
 
@@ -21,11 +16,11 @@ else()
   add_backward(normalizer)
 endif()
 
-target_link_libraries(normalizer ${llvm_libs})
-target_link_libraries(LLVMUninlineConstExpr ${llvm_libs} )
+target_link_libraries(normalizer ${LLVM_LIBS})
+target_link_libraries(LLVMUninlineConstExpr ${LLVM_LIBS} )
 
 # Deploy after build
 add_custom_command(TARGET normalizer POST_BUILD
   COMMAND ${CMAKE_COMMAND}
   -E copy $<TARGET_FILE:normalizer> ${PROJECT_BINARY_DIR}/normalizer
-  COMMENT "Deployed to:\n${PROJECT_BINARY_DIR}/normalizer")
+  COMMENT "Copied to: ${PROJECT_BINARY_DIR}/normalizer")
