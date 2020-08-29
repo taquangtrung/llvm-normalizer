@@ -11,20 +11,42 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   cout << "Normalizing Globals:\n";
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
     GlobalVariable *global = &(*it);
-    outs() << "Global Var: " << global << "\n";
+    outs() << "Global Var: " << *global << "\n";
 
     // IRBuilder<> builder()
     Constant* init = global->getInitializer();
 
-    for (int i = 0; i < global->getNumOperands(); i++) {
-      Value *operand = global->getOperand(i);
-      if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-        cout << "Constant Expr Operand: ";
-        operand->print(outs());
+    outs() << "  Init: " << *init << "\n";
+
+    if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
+      outs() << "    Constant Struct" << "\n";
+      outs() << "    Num of fields: " << structInit->getNumOperands() << "\n";
+
+      for (int i = 0; i < structInit->getNumOperands(); i++) {
+        Value *operand = structInit->getOperand(i);
+        if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
+          // outs() << "    Operand " << i << ": " << *expr << "\n";
+          Instruction *exprInstr = expr->getAsInstruction();
+          // outs() << "    ExprInstr: " << *exprInstr << "\n";
+
+          string gName = global->getName();
+          string gFName = gName + "_fld_" + to_string(i);
+
+          GlobalVariable* gFVar = new GlobalVariable(M, expr->getType(), false,
+                                                     GlobalValue::CommonLinkage,
+                                                     expr, gFName, global);
+          structInit->setOperand(i, gFVar);
+        }
       }
     }
-
   }
+
+  outs() << "New Global Variables\n";
+  for (auto it = globalList.begin(); it != globalList.end(); ++it) {
+    GlobalVariable *global = &(*it);
+    outs() << "Global Var: " << *global << "\n";
+  }
+
 
 
   // un-inline ConstExpr in module
