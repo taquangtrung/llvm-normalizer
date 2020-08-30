@@ -8,12 +8,11 @@ char UninlineConstExpr::ID = 0;
 bool UninlineConstExpr::runOnModule(Module &M) {
   // un-inline ConstExpr in global variables
   GlobalListType &globalList = M.getGlobalList();
-  cout << "Normalizing Globals:\n";
+  // cout << "Normalizing Globals:\n";
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
     GlobalVariable *global = &(*it);
     outs() << "Global Var: " << *global << "\n";
 
-    // IRBuilder<> builder()
     Constant* init = global->getInitializer();
 
     outs() << "  Init: " << *init << "\n";
@@ -25,9 +24,7 @@ bool UninlineConstExpr::runOnModule(Module &M) {
       for (int i = 0; i < structInit->getNumOperands(); i++) {
         Value *operand = structInit->getOperand(i);
         if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-          // outs() << "    Operand " << i << ": " << *expr << "\n";
-          Instruction *exprInstr = expr->getAsInstruction();
-          // outs() << "    ExprInstr: " << *exprInstr << "\n";
+          outs() << "    Operand " << i << ": " << *expr << "\n";
 
           string gName = global->getName();
           string gFName = gName + "_fld_" + to_string(i);
@@ -35,7 +32,14 @@ bool UninlineConstExpr::runOnModule(Module &M) {
           GlobalVariable* gFVar = new GlobalVariable(M, expr->getType(), false,
                                                      GlobalValue::CommonLinkage,
                                                      expr, gFName, global);
-          structInit->setOperand(i, gFVar);
+          if (PointerType* ptyp = dyn_cast<PointerType>(expr->getType())) {
+            Constant* pnull = ConstantPointerNull::get(ptyp);
+            // first set this field to a null pointer
+            structInit->setOperand(i, pnull);
+            // then create a function initialize this field
+            // ... but this initialization might be problematic...
+            // ... and it changes the structure of the program...
+          }
         }
       }
     }
@@ -46,8 +50,6 @@ bool UninlineConstExpr::runOnModule(Module &M) {
     GlobalVariable *global = &(*it);
     outs() << "Global Var: " << *global << "\n";
   }
-
-
 
   // un-inline ConstExpr in module
   FunctionListType &funcList = M.getFunctionList();
