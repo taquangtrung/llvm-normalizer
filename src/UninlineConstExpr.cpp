@@ -9,6 +9,21 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   // un-inline ConstExpr in global variables
   GlobalListType &globalList = M.getGlobalList();
   // cout << "Normalizing Globals:\n";
+
+  LLVMContext &ctx = M.getContext();
+
+  // create a function to initialize global variables
+  Type* retType = Type::getVoidTy(ctx);
+  vector<Type*> argTypes;
+  FunctionType *funcType = FunctionType::get(retType, argTypes, false);
+  Function* funcInitGlobal = Function::Create(funcType,
+                                              Function::ExternalLinkage,
+                                              "InitGlobal",
+                                              M);
+  BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "entry", funcInitGlobal);
+  IRBuilder<> builder(blkInitGlobal);
+
+
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
     GlobalVariable *global = &(*it);
     outs() << "Global Var: " << *global << "\n";
@@ -29,16 +44,22 @@ bool UninlineConstExpr::runOnModule(Module &M) {
           string gName = global->getName();
           string gFName = gName + "_fld_" + to_string(i);
 
-          GlobalVariable* gFVar = new GlobalVariable(M, expr->getType(), false,
-                                                     GlobalValue::CommonLinkage,
-                                                     expr, gFName, global);
+          // GlobalVariable* gFVar = new GlobalVariable(M, expr->getType(), false,
+          //                                            GlobalValue::CommonLinkage,
+          //                                            expr, gFName, global);
+
           if (PointerType* ptyp = dyn_cast<PointerType>(expr->getType())) {
             Constant* pnull = ConstantPointerNull::get(ptyp);
             // first set this field to a null pointer
             structInit->setOperand(i, pnull);
             // then create a function initialize this field
-            // ... but this initialization might be problematic...
-            // ... and it changes the structure of the program...
+            Instruction *exprInstr = expr->getAsInstruction();
+            builder.Insert(exprInstr);
+            ArrayRef<Value *> IdxList;
+            Instruction *gep = GetElementPtrInst::Create
+              (ptyp, global, )
+
+              (Type *PointeeType, Value *Ptr, ArrayRef<Value *> IdxList)
           }
         }
       }
