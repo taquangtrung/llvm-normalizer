@@ -18,9 +18,9 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   FunctionType *funcType = FunctionType::get(retType, argTypes, false);
   Function* funcInitGlobal = Function::Create(funcType,
                                               Function::ExternalLinkage,
-                                              "InitGlobal",
+                                              "__init_globals",
                                               M);
-  BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "entry", funcInitGlobal);
+  BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "", funcInitGlobal);
   IRBuilder<> builder(blkInitGlobal);
 
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
@@ -51,25 +51,31 @@ bool UninlineConstExpr::runOnModule(Module &M) {
             Constant* pnull = ConstantPointerNull::get(pTyp);
             // first set this field to a null pointer
             structInit->setOperand(i, pnull);
-            // then create a function initialize this field
-            Instruction *exprInstr = expr->getAsInstruction();
-            builder.Insert(exprInstr);
 
-            IntegerType* int32Typ = IntegerType::get(ctx, 32);
-            ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
-            ConstantInt* ptrIdx = ConstantInt::get(int32Typ, i);
-            Value* idxList[2] = {elemIdx, ptrIdx};
-            Type* elemptrTyp = pTyp->getPointerTo();
-            Instruction* gepInst = GetElementPtrInst::CreateInBounds(global,
-                                                                 (ArrayRef<Value*>)idxList);
-            builder.Insert(gepInst);
-            Instruction* storeInst = new StoreInst(exprInstr, gepInst);
-            builder.Insert(storeInst);
+            // // then create a function initialize this field
+            // Instruction *exprInstr = expr->getAsInstruction();
+            // builder.Insert(exprInstr);
+
+            // IntegerType* int32Typ = IntegerType::get(ctx, 32);
+            // ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
+            // ConstantInt* ptrIdx = ConstantInt::get(int32Typ, i);
+            // Value* idxList[2] = {elemIdx, ptrIdx};
+            // ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
+            // Instruction* gepInst = GetElementPtrInst:: CreateInBounds(global, gepIdx);
+            // builder.Insert(gepInst);
+            // Instruction* storeInst = new StoreInst(exprInstr, gepInst);
+            // builder.Insert(storeInst);
+
           }
         }
       }
     }
   }
+
+  // delete the initialization function when it is not needed
+  if (blkInitGlobal->size() == 0)
+    funcInitGlobal->eraseFromParent();
+
 
   outs() << "New Global Variables\n";
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
