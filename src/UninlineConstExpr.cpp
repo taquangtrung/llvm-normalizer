@@ -6,10 +6,12 @@ using namespace llvm;
 char UninlineConstExpr::ID = 0;
 
 bool UninlineConstExpr::runOnModule(Module &M) {
+  // TODO: separate the un-inlining  into two modules:
+  // 1. un-inline global vars
+  // 2. un-inline instructions' operations
+
   // un-inline ConstExpr in global variables
   GlobalListType &globalList = M.getGlobalList();
-  // cout << "Normalizing Globals:\n";
-
   LLVMContext &ctx = M.getContext();
 
   // create a function to initialize global variables
@@ -25,47 +27,34 @@ bool UninlineConstExpr::runOnModule(Module &M) {
 
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
     GlobalVariable *global = &(*it);
-    outs() << "Global Var: " << *global << "\n";
+    // outs() << "Global Var: " << *global << "\n";
 
     Constant* init = global->getInitializer();
 
-    outs() << "  Init: " << *init << "\n";
-
     if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
-      outs() << "    Constant Struct" << "\n";
-      outs() << "    Num of fields: " << structInit->getNumOperands() << "\n";
 
       for (int i = 0; i < structInit->getNumOperands(); i++) {
         Value *operand = structInit->getOperand(i);
         if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-          outs() << "    Operand " << i << ": " << *expr << "\n";
-
-          string gName = global->getName();
-          string gFName = gName + "_fld_" + to_string(i);
-
-          // GlobalVariable* gFVar = new GlobalVariable(M, expr->getType(), false,
-          //                                            GlobalValue::CommonLinkage,
-          //                                            expr, gFName, global);
 
           if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
-            Constant* pnull = ConstantPointerNull::get(pTyp);
             // first set this field to a null pointer
-            structInit->setOperand(i, pnull);
+            structInit->setOperand(i, ConstantPointerNull::get(pTyp));
 
-            // // then create a function initialize this field
-            // Instruction *exprInstr = expr->getAsInstruction();
-            // builder.Insert(exprInstr);
+            // then initialize this field in the global initialization function
+            Instruction *exprInstr = expr->getAsInstruction();
+            builder.Insert(exprInstr);
 
-            // IntegerType* int32Typ = IntegerType::get(ctx, 32);
-            // ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
-            // ConstantInt* ptrIdx = ConstantInt::get(int32Typ, i);
-            // Value* idxList[2] = {elemIdx, ptrIdx};
-            // ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
-            // Instruction* gepInst = GetElementPtrInst:: CreateInBounds(global, gepIdx);
-            // builder.Insert(gepInst);
-            // Instruction* storeInst = new StoreInst(exprInstr, gepInst);
-            // builder.Insert(storeInst);
+            IntegerType* int32Typ = IntegerType::get(ctx, 32);
+            ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
+            ConstantInt* ptrIdx = ConstantInt::get(int32Typ, i);
+            Value* idxList[2] = {elemIdx, ptrIdx};
+            ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
+            Instruction* gepInst = GetElementPtrInst:: CreateInBounds(global, gepIdx);
+            builder.Insert(gepInst);
 
+            Instruction* storeInst = new StoreInst(exprInstr, gepInst);
+            builder.Insert(storeInst);
           }
         }
       }
@@ -76,12 +65,6 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   if (blkInitGlobal->size() == 0)
     funcInitGlobal->eraseFromParent();
 
-
-  outs() << "New Global Variables\n";
-  for (auto it = globalList.begin(); it != globalList.end(); ++it) {
-    GlobalVariable *global = &(*it);
-    outs() << "Global Var: " << *global << "\n";
-  }
 
   // un-inline ConstExpr in module
   FunctionListType &funcList = M.getFunctionList();
