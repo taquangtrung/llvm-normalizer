@@ -23,7 +23,6 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "entry", funcInitGlobal);
   IRBuilder<> builder(blkInitGlobal);
 
-
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
     GlobalVariable *global = &(*it);
     outs() << "Global Var: " << *global << "\n";
@@ -48,18 +47,24 @@ bool UninlineConstExpr::runOnModule(Module &M) {
           //                                            GlobalValue::CommonLinkage,
           //                                            expr, gFName, global);
 
-          if (PointerType* ptyp = dyn_cast<PointerType>(expr->getType())) {
-            Constant* pnull = ConstantPointerNull::get(ptyp);
+          if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
+            Constant* pnull = ConstantPointerNull::get(pTyp);
             // first set this field to a null pointer
             structInit->setOperand(i, pnull);
             // then create a function initialize this field
             Instruction *exprInstr = expr->getAsInstruction();
             builder.Insert(exprInstr);
-            ArrayRef<Value *> IdxList;
-            Instruction *gep = GetElementPtrInst::Create
-              (ptyp, global, )
 
-              (Type *PointeeType, Value *Ptr, ArrayRef<Value *> IdxList)
+            IntegerType* int32Typ = IntegerType::get(ctx, 32);
+            ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
+            ConstantInt* ptrIdx = ConstantInt::get(int32Typ, i);
+            Value* idxList[2] = {elemIdx, ptrIdx};
+            Type* elemptrTyp = pTyp->getPointerTo();
+            Instruction* gepInst = GetElementPtrInst::CreateInBounds(global,
+                                                                 (ArrayRef<Value*>)idxList);
+            builder.Insert(gepInst);
+            Instruction* storeInst = new StoreInst(exprInstr, gepInst);
+            builder.Insert(storeInst);
           }
         }
       }
