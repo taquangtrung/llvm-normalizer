@@ -6,11 +6,10 @@ using namespace llvm;
 char UninlineConstExpr::ID = 0;
 
 bool UninlineConstExpr::runOnModule(Module &M) {
-  // TODO: separate the un-inlining  into two modules:
-  // 1. un-inline global vars
-  // 2. un-inline instructions' operations
-
+  //----------------------------------------------
   // un-inline ConstExpr in global variables
+  //----------------------------------------------
+
   GlobalListType &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
 
@@ -22,6 +21,11 @@ bool UninlineConstExpr::runOnModule(Module &M) {
                                               Function::ExternalLinkage,
                                               "__init_globals",
                                               M);
+  funcInitGlobal->setDSOLocal(true);
+  // funcInitGlobal->addAttribute(1, Attribute::NoInline);
+  // funcInitGlobal->addAttribute(0, Attribute::NoUnwind);
+  // funcInitGlobal->addAttribute(2, Attribute::UWTable);
+
   BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "", funcInitGlobal);
   IRBuilder<> builder(blkInitGlobal);
 
@@ -65,8 +69,10 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   if (blkInitGlobal->size() == 0)
     funcInitGlobal->eraseFromParent();
 
+  //----------------------------------------------
+  // un-inline ConstExpr in instructions
+  //----------------------------------------------
 
-  // un-inline ConstExpr in module
   FunctionListType &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
