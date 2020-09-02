@@ -68,6 +68,10 @@ bool UninlineConstExpr::runOnModule(Module &M) {
   // delete the initialization function when it is not needed
   if (blkInitGlobal->size() == 0)
     funcInitGlobal->eraseFromParent();
+  else {
+    Instruction* returnInst = ReturnInst::Create(ctx);
+    builder.Insert(returnInst);
+  }
 
   //----------------------------------------------
   // un-inline ConstExpr in instructions
