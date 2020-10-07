@@ -5,6 +5,27 @@ using namespace llvm;
 
 char UninlineConstExpr::ID = 0;
 
+void UninlineConstExpr::uninlineInstr(IRBuilder<> builder, Instruction* instr) {
+  builder.SetInsertPoint(instr);
+
+  // transform ConstantExpr in operands into new instructions
+  for (int i = 0; i < instr->getNumOperands(); i++) {
+    Value *operand = instr->getOperand(i);
+    if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
+      // outs() << "ConstantExpr: " << *expr << "\n";
+
+      Instruction *exprInstr = expr->getAsInstruction();
+      // outs() << "ConstantExprInstr: " << *exprInstr << "\n";
+
+      builder.Insert(exprInstr);
+      instr->setOperand(i, exprInstr);
+
+      uninlineInstr(builder, exprInstr);
+    }
+  }
+
+}
+
 bool UninlineConstExpr::runOnModule(Module &M) {
   //----------------------------------------------
   // un-inline ConstExpr in global variables
@@ -89,17 +110,8 @@ bool UninlineConstExpr::runOnModule(Module &M) {
 
       for (auto it3 = blk->begin(); it3 != blk->end(); ++it3) {
         Instruction *instr = &(*it3);
-        builder.SetInsertPoint(instr);
 
-        // transform ConstantExpr in operands into new instructions
-        for (int i = 0; i < instr->getNumOperands(); i++) {
-          Value *operand = instr->getOperand(i);
-          if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-            Instruction *exprInstr = expr->getAsInstruction();
-            builder.Insert(exprInstr);
-            instr->setOperand(i, exprInstr);
-          }
-        }
+        uninlineInstr(builder, instr);
       }
     }
   }

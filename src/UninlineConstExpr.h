@@ -25,6 +25,8 @@ struct UninlineConstExpr : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
+  void uninlineInstr(IRBuilder<> builder, Instruction* instr);
+
   UninlineConstExpr() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;

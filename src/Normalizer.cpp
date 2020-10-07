@@ -31,7 +31,7 @@ Arguments parseArguments(int argc, char** argv) {
     ("input", "Input file", cxxopts::value<std::string>())
     ("output", "Output file", cxxopts::value<std::string>())
     ("debug", "Enable debugging")
-    ;
+    ("help", "Help");
 
   // parse arguments by positional and flags
   options.parse_positional({"input"});
