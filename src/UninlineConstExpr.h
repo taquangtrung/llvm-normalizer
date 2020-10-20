@@ -25,7 +25,9 @@ struct UninlineConstExpr : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  void uninlineInstr(IRBuilder<> builder, Instruction* instr);
+  void handleGlobals(Module &M);
+  void handleFunctions(Module &M);
+  void handleInstr(IRBuilder<> builder, Instruction* instr);
 
   UninlineConstExpr() : ModulePass(ID) {}
 

@@ -5,28 +5,10 @@ using namespace llvm;
 
 char UninlineConstExpr::ID = 0;
 
-void UninlineConstExpr::uninlineInstr(IRBuilder<> builder, Instruction* instr) {
-  builder.SetInsertPoint(instr);
-
-  // transform ConstantExpr in operands into new instructions
-  for (int i = 0; i < instr->getNumOperands(); i++) {
-    Value *operand = instr->getOperand(i);
-    if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-      // outs() << "ConstantExpr: " << *expr << "\n";
-
-      Instruction *exprInstr = expr->getAsInstruction();
-      // outs() << "ConstantExprInstr: " << *exprInstr << "\n";
-
-      builder.Insert(exprInstr);
-      instr->setOperand(i, exprInstr);
-
-      uninlineInstr(builder, exprInstr);
-    }
-  }
-
-}
-
-bool UninlineConstExpr::runOnModule(Module &M) {
+/**
+ * un-inline ConstExpr in global variables' initializers
+ */
+void UninlineConstExpr::handleGlobals(Module &M) {
   //----------------------------------------------
   // un-inline ConstExpr in global variables
   //----------------------------------------------
@@ -43,9 +25,6 @@ bool UninlineConstExpr::runOnModule(Module &M) {
                                               "__init_globals",
                                               M);
   funcInitGlobal->setDSOLocal(true);
-  // funcInitGlobal->addAttribute(1, Attribute::NoInline);
-  // funcInitGlobal->addAttribute(0, Attribute::NoUnwind);
-  // funcInitGlobal->addAttribute(2, Attribute::UWTable);
 
   BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "", funcInitGlobal);
   IRBuilder<> builder(blkInitGlobal);
@@ -55,6 +34,9 @@ bool UninlineConstExpr::runOnModule(Module &M) {
     // outs() << "Global Var: " << *global << "\n";
 
     Constant* init = global->getInitializer();
+
+    if (init == NULL)
+      continue;
 
     if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
 
@@ -93,10 +75,35 @@ bool UninlineConstExpr::runOnModule(Module &M) {
     Instruction* returnInst = ReturnInst::Create(ctx);
     builder.Insert(returnInst);
   }
+}
 
-  //----------------------------------------------
-  // un-inline ConstExpr in instructions
-  //----------------------------------------------
+/**
+ * un-inline ConstExpr in instructions, recursively
+ */
+void UninlineConstExpr::handleInstr(IRBuilder<> builder, Instruction* instr) {
+  builder.SetInsertPoint(instr);
+
+  // transform ConstantExpr in operands into new instructions
+  for (int i = 0; i < instr->getNumOperands(); i++) {
+    Value *operand = instr->getOperand(i);
+    if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
+      // outs() << "ConstantExpr: " << *expr << "\n";
+
+      Instruction *exprInstr = expr->getAsInstruction();
+      // outs() << "ConstantExprInstr: " << *exprInstr << "\n";
+
+      builder.Insert(exprInstr);
+      instr->setOperand(i, exprInstr);
+
+      handleInstr(builder, exprInstr);
+    }
+  }
+}
+
+/**
+ * un-inline ConstExpr in Functions' instructions
+ */
+void UninlineConstExpr::handleFunctions(Module &M) {
 
   FunctionListType &funcList = M.getFunctionList();
 
@@ -111,10 +118,16 @@ bool UninlineConstExpr::runOnModule(Module &M) {
       for (auto it3 = blk->begin(); it3 != blk->end(); ++it3) {
         Instruction *instr = &(*it3);
 
-        uninlineInstr(builder, instr);
+        handleInstr(builder, instr);
       }
     }
   }
+}
+
+bool UninlineConstExpr::runOnModule(Module &M) {
+  handleGlobals(M);
+
+  handleFunctions(M);
 
   return true;
 }
