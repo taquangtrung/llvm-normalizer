@@ -29,6 +29,7 @@ Arguments parseArguments(int argc, char** argv) {
   cxxopts::Options options("normalizer", "Options of normalizer");
   options.add_options()
     ("input", "Input file", cxxopts::value<std::string>())
+    ("o", "Output file", cxxopts::value<std::string>())
     ("output", "Output file", cxxopts::value<std::string>())
     ("debug", "Enable debugging")
     ("help", "Help");

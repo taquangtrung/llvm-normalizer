@@ -9,9 +9,7 @@ char UninlineConstExpr::ID = 0;
  * un-inline ConstExpr in global variables' initializers
  */
 void UninlineConstExpr::handleGlobals(Module &M) {
-  //----------------------------------------------
-  // un-inline ConstExpr in global variables
-  //----------------------------------------------
+  outs() << "Handling globals initialization" << "\n";
 
   GlobalListType &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
@@ -35,15 +33,17 @@ void UninlineConstExpr::handleGlobals(Module &M) {
 
     Constant* init = global->getInitializer();
 
-    if (init == NULL)
+    if (init == NULL) {
       continue;
+    }
 
-    if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
+    //
+    else if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
+      outs() << "ConstantStruct of " << *global << "\n";
 
       for (int i = 0; i < structInit->getNumOperands(); i++) {
         Value *operand = structInit->getOperand(i);
         if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-
           if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
             // first set this field to a null pointer
             structInit->setOperand(i, ConstantPointerNull::get(pTyp));
@@ -66,6 +66,28 @@ void UninlineConstExpr::handleGlobals(Module &M) {
         }
       }
     }
+
+    //
+    else if (ConstantArray * arrayInit = dyn_cast<ConstantArray>(init)) {
+      outs() << "ConstantArray" << "\n";
+      outs() << "Num operands: " << arrayInit->getNumOperands() << "\n";
+      for (int i = 0; i < arrayInit->getNumOperands(); i++) {
+        Value *operand = arrayInit->getOperand(0);
+        outs() << operand << "\n";
+      }
+    }
+
+    //
+    else if (ConstantVector * vectorInit = dyn_cast<ConstantVector>(init)) {
+      outs() << "ConstantVector" << "\n";
+      // outs() << "Num operands: " << arrayInit->getNumOperands() << "\n";
+      // for (int i = 0; i < arrayInit->getNumOperands(); i++) {
+      //   Value *operand = arrayInit->getOperand(0);
+      //   outs() << operand << "\n";
+      // }
+    }
+
+
   }
 
   // delete the initialization function when it is not needed
