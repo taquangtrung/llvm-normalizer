@@ -33,17 +33,22 @@ void UninlineConstExpr::handleGlobals(Module &M) {
 
     Constant* init = global->getInitializer();
 
-    if (init == NULL) {
+    if (init == NULL)
       continue;
-    }
 
     //
-    else if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
-      outs() << "ConstantStruct of " << *global << "\n";
+    if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
+      outs() << "ConstantStruct: " << *structInit << "\n";
+      outs() << "   num of fields: " << structInit->getNumOperands() << "\n";
 
       for (int i = 0; i < structInit->getNumOperands(); i++) {
         Value *operand = structInit->getOperand(i);
         if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
+          outs() << "ConstantExpr\n";
+
+          if (expr == NULL)
+            continue;
+
           if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
             // first set this field to a null pointer
             structInit->setOperand(i, ConstantPointerNull::get(pTyp));
@@ -64,30 +69,46 @@ void UninlineConstExpr::handleGlobals(Module &M) {
             builder.Insert(storeInst);
           }
         }
+
+        else if (ConstantArray *array = dyn_cast<ConstantArray>(operand)) {
+          outs() << "   ConstantArray\n" ;
+
+          if (array == NULL)
+            continue;
+
+          for (int j = 0; j < array->getNumOperands(); j++) {
+
+            Constant* elem = array->getAggregateElement(j);
+
+            if (elem == NULL)
+              continue;
+
+            if (ConstantExpr* expr = dyn_cast<ConstantExpr>(elem)) {
+              if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
+                // first set this field to a null pointer
+                array->setOperand(j, ConstantPointerNull::get(pTyp));
+
+                // then initialize this field in the global initialization function
+                Instruction *exprInstr = expr->getAsInstruction();
+                builder.Insert(exprInstr);
+
+                IntegerType* int32Typ = IntegerType::get(ctx, 32);
+                ConstantInt* arrayIdx = ConstantInt::get(int32Typ, 0);
+                ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
+                ConstantInt* ptrIdx = ConstantInt::get(int32Typ, j);
+                Value* idxList[3] = {arrayIdx, elemIdx, ptrIdx};
+                ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
+                Instruction* gepInst = GetElementPtrInst:: CreateInBounds(global, gepIdx);
+                builder.Insert(gepInst);
+
+                Instruction* storeInst = new StoreInst(exprInstr, gepInst);
+                builder.Insert(storeInst);
+              }
+            }
+          }
+        }
       }
     }
-
-    //
-    else if (ConstantArray * arrayInit = dyn_cast<ConstantArray>(init)) {
-      outs() << "ConstantArray" << "\n";
-      outs() << "Num operands: " << arrayInit->getNumOperands() << "\n";
-      for (int i = 0; i < arrayInit->getNumOperands(); i++) {
-        Value *operand = arrayInit->getOperand(0);
-        outs() << operand << "\n";
-      }
-    }
-
-    //
-    else if (ConstantVector * vectorInit = dyn_cast<ConstantVector>(init)) {
-      outs() << "ConstantVector" << "\n";
-      // outs() << "Num operands: " << arrayInit->getNumOperands() << "\n";
-      // for (int i = 0; i < arrayInit->getNumOperands(); i++) {
-      //   Value *operand = arrayInit->getOperand(0);
-      //   outs() << operand << "\n";
-      // }
-    }
-
-
   }
 
   // delete the initialization function when it is not needed

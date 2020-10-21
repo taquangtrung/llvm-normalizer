@@ -11,6 +11,7 @@
 #include "cxxopts/cxxopts.hpp"
 
 #include "UninlineConstExpr.h"
+#include "UnwrapGEP.h"
 
 using namespace std;
 using namespace llvm;
@@ -63,7 +64,9 @@ Arguments parseArguments(int argc, char** argv) {
 }
 
 bool normalizeModule(Module& module) {
-  return UninlineConstExpr::normalizeModule(module);
+  UninlineConstExpr::normalizeModule(module);
+  UnwrapGEP::normalizeModule(module);
+  return true;
 }
 
 
