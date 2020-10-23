@@ -31,6 +31,9 @@ void UninlineConstExpr::handleGlobals(Module &M) {
     GlobalVariable *global = &(*it);
     // outs() << "Global Var: " << *global << "\n";
 
+    if (!(global->hasInitializer()))
+      continue;
+
     Constant* init = global->getInitializer();
 
     if (init == NULL)
