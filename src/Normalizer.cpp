@@ -12,6 +12,7 @@
 
 #include "UninlineConstExpr.h"
 #include "UnwrapGEP.h"
+#include "InlineComplFunction.h"
 
 using namespace std;
 using namespace llvm;
@@ -66,6 +67,7 @@ Arguments parseArguments(int argc, char** argv) {
 bool normalizeModule(Module& module) {
   UninlineConstExpr::normalizeModule(module);
   UnwrapGEP::normalizeModule(module);
+  InlineComplFunction::normalizeModule(module);
   return true;
 }
 

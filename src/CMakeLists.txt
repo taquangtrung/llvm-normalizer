@@ -1,7 +1,7 @@
 set(SOURCE_FILES
   Normalizer.cpp
   UnwrapGEP.cpp
-  InlineFunction.cpp
+  InlineComplFunction.cpp
   UninlineConstExpr.cpp)
 
 # Relevant LLVM Components can be found by: llvm-config --components

@@ -83,9 +83,9 @@ bool UnwrapGEP::normalizeModule(Module &M) {
 }
 
 static RegisterPass<UnwrapGEP> X("UnwrapGEP",
-                                          "Normalize ConstantExpr",
-                                          false /* Only looks at CFG */,
-                                          false /* Analysis Pass */);
+                                 "Unwrap GEP Instruction of only 1 index 0",
+                                 false /* Only looks at CFG */,
+                                 false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
