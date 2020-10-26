@@ -5,6 +5,10 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/CallSite.h"
+#include "llvm/IR/Verifier.h"
+
+#include "llvm/Analysis/InlineCost.h"
 
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -23,14 +27,15 @@ using BasicBlockListType = SymbolTableList<BasicBlock>;
 
 namespace discover {
 
-struct InlineComplFunction : public ModulePass {
+struct InlineDerefFunction : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
+  void setInlineableFunctions(Module &M);
   Function* findInlineableFunc(Module &M);
   void inlineFunction(Module &M, Function* func);
 
-  InlineComplFunction() : ModulePass(ID) {}
+  InlineDerefFunction() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

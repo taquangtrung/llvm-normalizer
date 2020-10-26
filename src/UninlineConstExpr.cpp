@@ -9,7 +9,7 @@ char UninlineConstExpr::ID = 0;
  * un-inline ConstExpr in global variables' initializers
  */
 void UninlineConstExpr::handleGlobals(Module &M) {
-  outs() << "Handling globals initialization" << "\n";
+  // outs() << "Handling globals initialization" << "\n";
 
   GlobalListType &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
@@ -41,13 +41,13 @@ void UninlineConstExpr::handleGlobals(Module &M) {
 
     //
     if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
-      outs() << "ConstantStruct: " << *structInit << "\n";
-      outs() << "   num of fields: " << structInit->getNumOperands() << "\n";
+      // outs() << "ConstantStruct: " << *structInit << "\n";
+      // outs() << "   num of fields: " << structInit->getNumOperands() << "\n";
 
       for (int i = 0; i < structInit->getNumOperands(); i++) {
         Value *operand = structInit->getOperand(i);
         if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-          outs() << "ConstantExpr\n";
+          // outs() << "ConstantExpr\n";
 
           if (expr == NULL)
             continue;
@@ -74,7 +74,7 @@ void UninlineConstExpr::handleGlobals(Module &M) {
         }
 
         else if (ConstantArray *array = dyn_cast<ConstantArray>(operand)) {
-          outs() << "   ConstantArray\n" ;
+          // outs() << "   ConstantArray\n" ;
 
           if (array == NULL)
             continue;
