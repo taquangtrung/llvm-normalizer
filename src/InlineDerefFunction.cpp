@@ -10,14 +10,34 @@ Function* InlineDerefFunction::findInlineableFunc(Module &M) {
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     Function *func = &(*it);
+    int numParams = func->getNumOperands();
 
     GlobalValue::LinkageTypes linkage = func->getLinkage();
 
     AttributeList attributes = func->getAttributes();
-    if (attributes.hasFnAttribute(Attribute::Dereferenceable)) {
-      // outs() << "Function: " << func->getName() << "\n";
+    // outs() << "Function: " << func->getName() << "\n";
+    // for (auto it2 = attributes.begin(); it2 != attributes.end(); ++it2) {
+      // AttributeSet *attribute = &(*it2);
+
+    // outs() << "bytes: " << func->getDereferenceableBytes(0) << "\n";
+      // outs() << "   attributes: " << it2->getAsString() << "\n";
+    // }
+
+    // if (attributes.hasFnAttribute(Attribute::Dereferenceable)) {
+    //   outs() << "  has dereferenceable\n";
+    //   if (attributes.hasFnAttribute(Attribute::NoInline)) {
+    //     func->removeFnAttr(Attribute::NoInline);
+    //     func->addFnAttr(Attribute::AlwaysInline);
+    //     return func;
+    //   }
+
+    // }
+    // outs() << "  doesn't have dereferenceable\n";
+
+    if (func->getDereferenceableBytes(0) > 0)
       return func;
-    }
+
+    // func->
   }
 
   return NULL;
