@@ -69,7 +69,7 @@ bool normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
   UninlineConstExpr::normalizeModule(M);
   InlineDerefFunction::normalizeModule(M);
-  UnwrapGEP::normalizeModule(M);
+  // UnwrapGEP::normalizeModule(M);
 
   return true;
 }
