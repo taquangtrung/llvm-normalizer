@@ -5,6 +5,16 @@ using namespace llvm;
 
 char InlineDerefFunction::ID = 0;
 
+bool hasGlobalValue(Function &F) {
+  for (BasicBlock &BB : F)
+    for (Instruction &I : BB)
+      for (Value *Op : I.operands())
+        if (GlobalValue* G = dyn_cast<GlobalValue>(Op))
+          return true;
+
+  return false;
+}
+
 Function* InlineDerefFunction::findInlineableFunc(Module &M) {
   FunctionListType &funcList = M.getFunctionList();
 
@@ -16,6 +26,10 @@ Function* InlineDerefFunction::findInlineableFunc(Module &M) {
 
     AttributeList attributes = func->getAttributes();
 
+    if ((func->hasLinkOnceLinkage() || func->hasLinkOnceODRLinkage()) &&
+        !hasGlobalValue(*func))
+      return func;
+
     if (func->getDereferenceableBytes(0) > 0)
       return func;
   }
@@ -24,7 +38,7 @@ Function* InlineDerefFunction::findInlineableFunc(Module &M) {
 }
 
 void InlineDerefFunction::inlineFunction(Module &M, Function* func) {
-  // outs() << "Start to inline function: " << func->getName() << "\n";
+  // outs() << "== Start to inline function: " << func->getName() << "\n";
 
   StringRef funcName = func->getName();
 
