@@ -18,10 +18,8 @@ void UninlineConstExpr::handleGlobals(Module &M) {
   Type* retType = Type::getVoidTy(ctx);
   vector<Type*> argTypes;
   FunctionType *funcType = FunctionType::get(retType, argTypes, false);
-  Function* funcInitGlobal = Function::Create(funcType,
-                                              Function::ExternalLinkage,
-                                              "__init_globals",
-                                              M);
+  Function* funcInitGlobal = Function::Create(funcType, Function::ExternalLinkage,
+                                          0, "__init_globals", nullptr);
   funcInitGlobal->setDSOLocal(true);
 
   BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "", funcInitGlobal);
@@ -115,11 +113,13 @@ void UninlineConstExpr::handleGlobals(Module &M) {
   }
 
   // delete the initialization function when it is not needed
-  if (blkInitGlobal->size() == 0)
-    funcInitGlobal->eraseFromParent();
-  else {
+  if (blkInitGlobal->size() != 0) {
     Instruction* returnInst = ReturnInst::Create(ctx);
     builder.Insert(returnInst);
+
+    // insert the function to the beginning of the list
+    FunctionListType &funcList = M.getFunctionList();
+    funcList.push_front(funcInitGlobal);
   }
 }
 
