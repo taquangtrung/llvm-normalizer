@@ -95,7 +95,7 @@ void UninlineConstExpr::handleGlobals(Module &M) {
 
                 IntegerType* int32Typ = IntegerType::get(ctx, 32);
                 ConstantInt* arrayIdx = ConstantInt::get(int32Typ, 0);
-                ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
+                ConstantInt* elemIdx = ConstantInt::get(int32Typ, i);
                 ConstantInt* ptrIdx = ConstantInt::get(int32Typ, j);
                 Value* idxList[3] = {arrayIdx, elemIdx, ptrIdx};
                 ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
