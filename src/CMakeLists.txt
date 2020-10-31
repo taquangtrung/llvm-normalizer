@@ -1,4 +1,5 @@
 set(SOURCE_FILES
+  Debug.cpp
   Normalizer.cpp
   UnwrapGEP.cpp
   InlineDerefFunction.cpp

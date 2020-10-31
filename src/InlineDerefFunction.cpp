@@ -38,7 +38,7 @@ Function* InlineDerefFunction::findInlineableFunc(Module &M) {
 }
 
 void InlineDerefFunction::inlineFunction(Module &M, Function* func) {
-  outs() << "* Start to inline function: " << func->getName() << "\n";
+  debug() << "* Start to inline function: " << func->getName() << "\n";
 
   StringRef funcName = func->getName();
 
@@ -59,10 +59,10 @@ void InlineDerefFunction::inlineFunction(Module &M, Function* func) {
 
   // M.getFunctionList().erase(func);
   if (successful) {
-    outs() << "    Inline succeeded!\n";
+    debug() << "    Inline succeeded!\n";
     func->eraseFromParent();
   }
-  else outs() << "    Inline failed!\n";
+  else debug() << "    Inline failed!\n";
 }
 
 bool InlineDerefFunction::runOnModule(Module &M) {

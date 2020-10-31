@@ -10,6 +10,7 @@
 // #include "cxxopts/cxxopts.hpp"
 #include "cxxopts/cxxopts.hpp"
 
+#include "Debug.h"
 #include "UninlineConstExpr.h"
 #include "UnwrapGEP.h"
 #include "InlineDerefFunction.h"
@@ -60,7 +61,7 @@ Arguments parseArguments(int argc, char** argv) {
   }
 
   // get debugging flag
-  args.debugging = parsedOptions["debug"].as<bool>();
+  debugging = parsedOptions["debug"].as<bool>();
 
   return args;
 }
@@ -81,7 +82,6 @@ int main(int argc, char** argv) {
   Arguments args = parseArguments(argc, argv);
   string inputFile = args.inputFile;
   string outputFile = args.outputFile;
-  bool debugging = args.debugging;
 
   // process bitcode
   unique_ptr<Module> module;
@@ -90,20 +90,17 @@ int main(int argc, char** argv) {
 
   module = parseIRFile(inputFile, err, context);
 
-  if (debugging) {
-    cout << "===============================\n"
-         << "BEFORE NORMALIZATION: " << std::endl;
-    module->print(outs(), nullptr);
-  }
+
+  debug() << "===============================\n"
+          << "BEFORE NORMALIZATION:\n";
+  module->print(debug(), nullptr);
 
   // normalize module
   normalizeModule(*module);
 
-  if (debugging) {
-    cout << "===============================\n"
-         << "AFTER NORMALIZATION: " << std::endl;
-    module->print(outs(), nullptr);
-  }
+  debug() << "===============================\n"
+          << "AFTER NORMALIZATION:\n";
+  module->print(debug(), nullptr);
 
   // write output
   if (!outputFile.empty()) {

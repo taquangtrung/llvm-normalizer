@@ -18,6 +18,8 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
+#include "Debug.h"
+
 using namespace std;
 using namespace llvm;
 
