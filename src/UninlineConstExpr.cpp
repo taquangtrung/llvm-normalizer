@@ -11,7 +11,7 @@ char UninlineConstExpr::ID = 0;
 void UninlineConstExpr::handleGlobals(Module &M) {
   // outs() << "Handling globals initialization" << "\n";
 
-  GlobalListType &globalList = M.getGlobalList();
+  GlobalList &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
 
   // create a function to initialize global variables
@@ -118,7 +118,7 @@ void UninlineConstExpr::handleGlobals(Module &M) {
     builder.Insert(returnInst);
 
     // insert the function to the beginning of the list
-    FunctionListType &funcList = M.getFunctionList();
+    FunctionList &funcList = M.getFunctionList();
     funcList.push_front(funcInitGlobal);
   }
 }
@@ -151,11 +151,11 @@ void UninlineConstExpr::handleInstr(IRBuilder<> builder, Instruction* instr) {
  */
 void UninlineConstExpr::handleFunctions(Module &M) {
 
-  FunctionListType &funcList = M.getFunctionList();
+  FunctionList &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     auto func = it;
-    BasicBlockListType &blockList = func->getBasicBlockList();
+    BasicBlockList &blockList = func->getBasicBlockList();
 
     for (auto it2 = blockList.begin(); it2 != blockList.end(); ++it2) {
       BasicBlock *blk = &(*it2);

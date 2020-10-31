@@ -7,7 +7,7 @@ char ElimUnusedAuxFunction::ID = 0;
 
 bool ElimUnusedAuxFunction::runOnModule(Module &M) {
 
-  FunctionListType &funcList = M.getFunctionList();
+  FunctionList &funcList = M.getFunctionList();
 
   SmallSetVector<Function*, 16> unusedFuncs;
 

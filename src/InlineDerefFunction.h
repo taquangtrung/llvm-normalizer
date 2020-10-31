@@ -19,13 +19,10 @@
 #include "llvm/Transforms/Utils/Cloning.h"
 
 #include "Debug.h"
+#include "Common.h"
 
 using namespace std;
 using namespace llvm;
-
-using GlobalListType = SymbolTableList<GlobalVariable>;
-using FunctionListType = SymbolTableList<Function>;
-using BasicBlockListType = SymbolTableList<BasicBlock>;
 
 namespace discover {
 
@@ -34,7 +31,7 @@ struct InlineDerefFunction : public ModulePass {
   static bool normalizeModule(Module &M);
 
   void setInlineableFunctions(Module &M);
-  Function* findInlineableFunc(Module &M);
+  Function* findCandidate(Module &M, FunctionList visited);
   void inlineFunction(Module &M, Function* func);
 
   InlineDerefFunction() : ModulePass(ID) {}

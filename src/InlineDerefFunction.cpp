@@ -15,11 +15,16 @@ bool hasGlobalValue(Function &F) {
   return false;
 }
 
-Function* InlineDerefFunction::findInlineableFunc(Module &M) {
-  FunctionListType &funcList = M.getFunctionList();
+Function* InlineDerefFunction::findCandidate(Module &M, FunctionList visited) {
+  FunctionList &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     Function *func = &(*it);
+
+    if (visited.is_member(func))
+      continue;
+
+
     int numParams = func->getNumOperands();
 
     GlobalValue::LinkageTypes linkage = func->getLinkage();
@@ -62,28 +67,31 @@ void InlineDerefFunction::inlineFunction(Module &M, Function* func) {
     debug() << "    Inline succeeded!\n";
     func->eraseFromParent();
   }
-  else debug() << "    Inline failed!\n";
+  else
+    debug() << "    Inline failed!\n";
 }
 
 bool InlineDerefFunction::runOnModule(Module &M) {
 
+  FunctionList visited;
   while (true) {
-    Function *func = findInlineableFunc(M);
-    // outs() << "Prepare to inline: " << func->getName() << "\n";
+    Function *func = findCandidate(M);
+    // debug() << "Prepare to inline: " << func->getName() << "\n";
 
     if (!func)
       break;
 
-    inlineFunction(M, func);
+    if (!inlineFunction(M, func))
+      visited.addNodeToList(func);
   }
 
 
   std::string str;
   llvm::raw_string_ostream rso(str);
   if (verifyModule(M, &rso)) {
-    outs() << "After inlining functions\n";
-    outs() << "Module is broken: " << rso.str() << "\n";
-    outs() << M;
+    debug() << "After inlining functions\n";
+    debug() << "Module is broken: " << rso.str() << "\n";
+    debug() << M;
   }
 
 

@@ -12,12 +12,11 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "Debug.h"
+#include "Common.h"
+
 using namespace std;
 using namespace llvm;
-
-using GlobalListType = SymbolTableList<GlobalVariable>;
-using FunctionListType = SymbolTableList<Function>;
-using BasicBlockListType = SymbolTableList<BasicBlock>;
 
 namespace discover {
 

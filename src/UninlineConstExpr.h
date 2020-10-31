@@ -15,10 +15,6 @@
 using namespace std;
 using namespace llvm;
 
-using GlobalListType = SymbolTableList<GlobalVariable>;
-using FunctionListType = SymbolTableList<Function>;
-using BasicBlockListType = SymbolTableList<BasicBlock>;
-
 namespace discover {
 
 struct UninlineConstExpr : public ModulePass {

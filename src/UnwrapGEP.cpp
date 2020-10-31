@@ -7,7 +7,7 @@ char UnwrapGEP::ID = 0;
 
 
 void UnwrapGEP::replaceOperand(Function *func, Value *replacee, Value *replacer) {
-  BasicBlockListType &blockList = func->getBasicBlockList();
+  BasicBlockList &blockList = func->getBasicBlockList();
 
   for (auto it = blockList.begin(); it != blockList.end(); ++it) {
     BasicBlock *blk = &(*it);
@@ -25,7 +25,7 @@ void UnwrapGEP::replaceOperand(Function *func, Value *replacee, Value *replacer)
 }
 
 bool UnwrapGEP::processFunction(Function *func) {
-  BasicBlockListType &blockList = func->getBasicBlockList();
+  BasicBlockList &blockList = func->getBasicBlockList();
   bool stop = true;
 
   for (auto it = blockList.begin(); it != blockList.end(); ++it) {
@@ -60,7 +60,7 @@ bool UnwrapGEP::processFunction(Function *func) {
  */
 void UnwrapGEP::handleFunctions(Module &M) {
 
-  FunctionListType &funcList = M.getFunctionList();
+  FunctionList &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     Function *func = &(*it);
