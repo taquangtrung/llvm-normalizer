@@ -8,9 +8,12 @@
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/LegacyPassManager.h"
 
+
 using namespace std;
 using namespace llvm;
 
 using GlobalList = SymbolTableList<GlobalVariable>;
 using FunctionList = SymbolTableList<Function>;
 using BasicBlockList = SymbolTableList<BasicBlock>;
+
+using FunctionSet = SmallSetVector<Function*, 16>;

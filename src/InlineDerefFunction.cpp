@@ -15,15 +15,22 @@ bool hasGlobalValue(Function &F) {
   return false;
 }
 
-Function* InlineDerefFunction::findCandidate(Module &M, FunctionList visited) {
+Function* InlineDerefFunction::findCandidate(Module &M, FunctionSet VisitedFuncs) {
   FunctionList &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     Function *func = &(*it);
 
-    if (visited.is_member(func))
-      continue;
 
+    bool visited = false;
+    for (Function *f: VisitedFuncs)
+      if (f->getName().equals(func->getName())) {
+        visited = true;
+        break;
+      }
+
+    if (visited)
+      continue;
 
     int numParams = func->getNumOperands();
 
@@ -42,7 +49,7 @@ Function* InlineDerefFunction::findCandidate(Module &M, FunctionList visited) {
   return NULL;
 }
 
-void InlineDerefFunction::inlineFunction(Module &M, Function* func) {
+bool InlineDerefFunction::inlineFunction(Module &M, Function* func) {
   debug() << "* Start to inline function: " << func->getName() << "\n";
 
   StringRef funcName = func->getName();
@@ -66,23 +73,26 @@ void InlineDerefFunction::inlineFunction(Module &M, Function* func) {
   if (successful) {
     debug() << "    Inline succeeded!\n";
     func->eraseFromParent();
+    return true;
   }
-  else
+  else {
     debug() << "    Inline failed!\n";
+    return false;
+  }
 }
 
 bool InlineDerefFunction::runOnModule(Module &M) {
 
-  FunctionList visited;
+  FunctionSet VisitedFuncs = FunctionSet();
+
   while (true) {
-    Function *func = findCandidate(M);
-    // debug() << "Prepare to inline: " << func->getName() << "\n";
+    Function *func = findCandidate(M, VisitedFuncs);
 
     if (!func)
       break;
 
     if (!inlineFunction(M, func))
-      visited.addNodeToList(func);
+      VisitedFuncs.insert(func);
   }
 
 

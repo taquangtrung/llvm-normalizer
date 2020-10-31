@@ -31,8 +31,8 @@ struct InlineDerefFunction : public ModulePass {
   static bool normalizeModule(Module &M);
 
   void setInlineableFunctions(Module &M);
-  Function* findCandidate(Module &M, FunctionList visited);
-  void inlineFunction(Module &M, Function* func);
+  Function* findCandidate(Module &M, FunctionSet visited);
+  bool inlineFunction(Module &M, Function* func);
 
   InlineDerefFunction() : ModulePass(ID) {}
 
