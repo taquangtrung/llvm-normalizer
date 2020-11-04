@@ -5,6 +5,87 @@ using namespace llvm;
 
 char UninlineConstExpr::ID = 0;
 
+
+void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> builder,
+                                               GlobalVariable *global, std::vector<Value*> gepIdxs,
+                                               Constant* initValue) {
+  debug() << "++ Processing global: " << *global << "\n"
+          << "   Current indices: ";
+  for (Value* idx: gepIdxs) {
+    debug() << *idx << ",  ";
+  }
+  debug() << "\n";
+  debug() << "   Init value: " << *initValue << "\n";
+
+  if (initValue->isNullValue() || initValue->isZeroValue())
+    return;
+
+  if (ConstantExpr *exprInit = dyn_cast<ConstantExpr>(initValue)) {
+    // then initialize this field in the global initialization function
+    Instruction *exprInstr = exprInit->getAsInstruction();
+    builder.Insert(exprInstr);
+
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, (ArrayRef<Value*>)gepIdxs);
+    builder.Insert(gepInst);
+
+    Instruction* storeInst = new StoreInst(exprInstr, gepInst);
+    builder.Insert(storeInst);
+  }
+
+  else if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(initValue)) {
+    for (int i = 0; i < structInit->getNumOperands(); i++) {
+      Constant *fieldInit = structInit->getOperand(i);
+
+      if (fieldInit->isNullValue() || fieldInit->isZeroValue())
+        continue;
+
+      Value* fieldIdx = ConstantInt::get(IntegerType::get(ctx, 32), i);
+      std::vector<Value*> currentIdxs(gepIdxs);
+      currentIdxs.push_back(fieldIdx);
+
+      debug() << "  field init: " << *fieldInit << "\n";
+
+      Type* fieldTyp = fieldInit->getType();
+
+      if (PointerType* ptrTyp = dyn_cast<PointerType>(fieldTyp))
+        structInit->setOperand(i, ConstantPointerNull::get(ptrTyp));
+      else if (IntegerType* intTyp = dyn_cast<IntegerType>(fieldTyp))
+        structInit->setOperand(i, ConstantInt::get(intTyp, 0));
+
+      processGlobalInitValue(ctx, builder, global, currentIdxs, fieldInit);
+    }
+  }
+
+  // unline a struct
+  else if (ConstantArray * arrayInit = dyn_cast<ConstantArray>(initValue)) {
+    for (int i = 0; i < arrayInit->getNumOperands(); i++) {
+      Constant *elemInit = arrayInit->getOperand(i);
+
+      if (elemInit->isNullValue() || elemInit->isZeroValue())
+        continue;
+
+      Value* elemIdx = ConstantInt::get(IntegerType::get(ctx, 32), i);
+      std::vector<Value*> currentIdxs(gepIdxs);
+      currentIdxs.push_back(elemIdx);
+
+      if (PointerType* elemTyp = dyn_cast<PointerType>(elemInit->getType()))
+        arrayInit->setOperand(i, ConstantPointerNull::get(elemTyp));
+
+      processGlobalInitValue(ctx, builder, global, currentIdxs, elemInit);
+    }
+  }
+
+  // other constant
+  else {
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, (ArrayRef<Value*>)gepIdxs);
+    builder.Insert(gepInst);
+
+    Instruction* storeInst = new StoreInst(initValue, gepInst);
+    builder.Insert(storeInst);
+  }
+
+}
+
 /**
  * un-inline ConstExpr in global variables' initializers
  */
@@ -33,83 +114,10 @@ void UninlineConstExpr::handleGlobals(Module &M) {
       continue;
 
     Constant* init = global->getInitializer();
+    std::vector<Value*> gepIdxs;
+    gepIdxs.push_back(ConstantInt::get(IntegerType::get(ctx, 32), 0));
+    processGlobalInitValue(ctx, builder, global, gepIdxs, init);
 
-    if (init == NULL)
-      continue;
-
-    //
-    if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(init)) {
-      // outs() << "ConstantStruct: " << *structInit << "\n";
-      // outs() << "   num of fields: " << structInit->getNumOperands() << "\n";
-
-      for (int i = 0; i < structInit->getNumOperands(); i++) {
-        Value *operand = structInit->getOperand(i);
-        if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-          // outs() << "ConstantExpr\n";
-
-          if (expr == NULL)
-            continue;
-
-          if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
-            // first set this field to a null pointer
-            structInit->setOperand(i, ConstantPointerNull::get(pTyp));
-
-            // then initialize this field in the global initialization function
-            Instruction *exprInstr = expr->getAsInstruction();
-            builder.Insert(exprInstr);
-
-            IntegerType* int32Typ = IntegerType::get(ctx, 32);
-            ConstantInt* elemIdx = ConstantInt::get(int32Typ, 0);
-            ConstantInt* ptrIdx = ConstantInt::get(int32Typ, i);
-            Value* idxList[2] = {elemIdx, ptrIdx};
-            ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
-            Instruction* gepInst = GetElementPtrInst:: CreateInBounds(global, gepIdx);
-            builder.Insert(gepInst);
-
-            Instruction* storeInst = new StoreInst(exprInstr, gepInst);
-            builder.Insert(storeInst);
-          }
-        }
-
-        else if (ConstantArray *array = dyn_cast<ConstantArray>(operand)) {
-          // outs() << "   ConstantArray\n" ;
-
-          if (array == NULL)
-            continue;
-
-          for (int j = 0; j < array->getNumOperands(); j++) {
-
-            Constant* elem = array->getAggregateElement(j);
-
-            if (elem == NULL)
-              continue;
-
-            if (ConstantExpr* expr = dyn_cast<ConstantExpr>(elem)) {
-              if (PointerType* pTyp = dyn_cast<PointerType>(expr->getType())) {
-                // first set this field to a null pointer
-                array->setOperand(j, ConstantPointerNull::get(pTyp));
-
-                // then initialize this field in the global initialization function
-                Instruction *exprInstr = expr->getAsInstruction();
-                builder.Insert(exprInstr);
-
-                IntegerType* int32Typ = IntegerType::get(ctx, 32);
-                ConstantInt* arrayIdx = ConstantInt::get(int32Typ, 0);
-                ConstantInt* elemIdx = ConstantInt::get(int32Typ, i);
-                ConstantInt* ptrIdx = ConstantInt::get(int32Typ, j);
-                Value* idxList[3] = {arrayIdx, elemIdx, ptrIdx};
-                ArrayRef<Value*> gepIdx = (ArrayRef<Value*>)idxList;
-                Instruction* gepInst = GetElementPtrInst:: CreateInBounds(global, gepIdx);
-                builder.Insert(gepInst);
-
-                Instruction* storeInst = new StoreInst(exprInstr, gepInst);
-                builder.Insert(storeInst);
-              }
-            }
-          }
-        }
-      }
-    }
   }
 
   // delete the initialization function when it is not needed
