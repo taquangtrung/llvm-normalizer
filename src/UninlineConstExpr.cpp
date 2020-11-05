@@ -92,7 +92,7 @@ void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> bui
 void UninlineConstExpr::handleGlobals(Module &M) {
   // outs() << "Handling globals initialization" << "\n";
 
-  GlobalList &globalList = M.getGlobalList();
+  GlobalVariableList &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
 
   // create a function to initialize global variables
@@ -180,13 +180,14 @@ void UninlineConstExpr::handleFunctions(Module &M) {
 
 bool UninlineConstExpr::runOnModule(Module &M) {
   handleGlobals(M);
-
   handleFunctions(M);
-
   return true;
 }
 
 bool UninlineConstExpr::normalizeModule(Module &M) {
+  debug() << "\n=========================================\n"
+          << "Uninlining Globals and Instructions ...\n";
+
   UninlineConstExpr pass;
   return pass.runOnModule(M);
 }

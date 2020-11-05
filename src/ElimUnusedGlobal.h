@@ -26,15 +26,11 @@ using namespace llvm;
 
 namespace discover {
 
-struct InlineDerefFunction : public ModulePass {
+struct ElimUnusedGlobal : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  void setInlineableFunctions(Module &M);
-  Function* findCandidate(Module &M, FunctionSet visited);
-  bool inlineFunction(Module &M, Function* func);
-
-  InlineDerefFunction() : ModulePass(ID) {}
+  ElimUnusedGlobal() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

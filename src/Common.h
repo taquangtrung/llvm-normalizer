@@ -12,7 +12,7 @@
 using namespace std;
 using namespace llvm;
 
-using GlobalList = SymbolTableList<GlobalVariable>;
+using GlobalVariableList = SymbolTableList<GlobalVariable>;
 using FunctionList = SymbolTableList<Function>;
 using BasicBlockList = SymbolTableList<BasicBlock>;
 

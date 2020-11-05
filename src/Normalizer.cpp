@@ -13,8 +13,9 @@
 #include "Debug.h"
 #include "UninlineConstExpr.h"
 #include "UnwrapGEP.h"
-#include "InlineDerefFunction.h"
+#include "InlineInternalFunction.h"
 #include "ElimUnusedAuxFunction.h"
+#include "ElimUnusedGlobal.h"
 
 using namespace std;
 using namespace llvm;
@@ -68,10 +69,12 @@ Arguments parseArguments(int argc, char** argv) {
 
 bool normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
-  UninlineConstExpr::normalizeModule(M);
-  InlineDerefFunction::normalizeModule(M);
+
+  InlineInternalFunction::normalizeModule(M);
+  ElimUnusedGlobal::normalizeModule(M);
   // UnwrapGEP::normalizeModule(M);
 
+  UninlineConstExpr::normalizeModule(M);
   return true;
 }
 
