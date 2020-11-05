@@ -31,7 +31,13 @@ void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> bui
     Instruction* storeInst = new StoreInst(exprInstr, gepInst);
     builder.Insert(storeInst);
   }
+  else if (isa<ConstantInt>(initValue)) {
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, (ArrayRef<Value*>)gepIdxs);
+    builder.Insert(gepInst);
 
+    Instruction* storeInst = new StoreInst(initValue, gepInst);
+    builder.Insert(storeInst);
+  }
   else if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(initValue)) {
     for (int i = 0; i < structInit->getNumOperands(); i++) {
       Constant *fieldInit = structInit->getOperand(i);
@@ -53,6 +59,7 @@ void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> bui
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
       processGlobalInitValue(ctx, builder, global, currentIdxs, fieldInit);
+
     }
   }
 
@@ -70,18 +77,12 @@ void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> bui
 
       if (PointerType* elemTyp = dyn_cast<PointerType>(elemInit->getType()))
         arrayInit->setOperand(i, ConstantPointerNull::get(elemTyp));
+      else if (IntegerType* intTyp = dyn_cast<IntegerType>(elemTyp))
+        structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
       processGlobalInitValue(ctx, builder, global, currentIdxs, elemInit);
+
     }
-  }
-
-  // other constant
-  else {
-    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, (ArrayRef<Value*>)gepIdxs);
-    builder.Insert(gepInst);
-
-    Instruction* storeInst = new StoreInst(initValue, gepInst);
-    builder.Insert(storeInst);
   }
 
 }

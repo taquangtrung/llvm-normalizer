@@ -75,6 +75,7 @@ bool normalizeModule(Module& M) {
   // UnwrapGEP::normalizeModule(M);
 
   UninlineConstExpr::normalizeModule(M);
+  ElimUnusedGlobal::normalizeModule(M);
   return true;
 }
 
