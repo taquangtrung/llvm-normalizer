@@ -32,7 +32,7 @@ struct InlineInternalFunction : public ModulePass {
 
   void setInlineableFunctions(Module &M);
   Function* findCandidate(Module &M, FunctionSet visited);
-  bool inlineFunction(Module &M, Function* func);
+  void inlineFunction(Module &M, Function* func);
 
   InlineInternalFunction() : ModulePass(ID) {}
 

@@ -15,14 +15,15 @@ bool hasGlobalValue(Function &F) {
   return false;
 }
 
-Function* InlineInternalFunction::findCandidate(Module &M, FunctionSet VisitedFuncs) {
+Function* InlineInternalFunction::findCandidate(Module &M,
+                                                FunctionSet processedFuncs) {
   FunctionList &funcList = M.getFunctionList();
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     Function *func = &(*it);
 
     bool visited = false;
-    for (Function *f: VisitedFuncs)
+    for (Function *f: processedFuncs)
       if (f->getName().equals(func->getName())) {
         visited = true;
         break;
@@ -45,7 +46,7 @@ Function* InlineInternalFunction::findCandidate(Module &M, FunctionSet VisitedFu
   return NULL;
 }
 
-bool InlineInternalFunction::inlineFunction(Module &M, Function* func) {
+void InlineInternalFunction::inlineFunction(Module &M, Function* func) {
   debug() << "* Start to inline function: " << func->getName() << "\n";
   StringRef funcName = func->getName();
   llvm::InlineFunctionInfo IFI;
@@ -69,25 +70,21 @@ bool InlineInternalFunction::inlineFunction(Module &M, Function* func) {
       func->eraseFromParent();
       debug() << "    Removed from parent!\n";
     }
-    return true;
   }
-  else {
-    debug() << "    Inline failed!\n";
-    return false;
-  }
+  else debug() << "    Inline failed!\n";
 }
 
 bool InlineInternalFunction::runOnModule(Module &M) {
-  FunctionSet VisitedFuncs = FunctionSet();
+  FunctionSet processedFuncs = FunctionSet();
 
   while (true) {
-    Function *func = findCandidate(M, VisitedFuncs);
+    Function *func = findCandidate(M, processedFuncs);
 
     if (!func)
       break;
 
-    if (!inlineFunction(M, func))
-      VisitedFuncs.insert(func);
+    inlineFunction(M, func);
+    processedFuncs.insert(func);
   }
 
 
