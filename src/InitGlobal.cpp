@@ -1,14 +1,16 @@
-#include "UninlineGlobal.h"
+#include "InitGlobal.h"
 
 using namespace discover;
 using namespace llvm;
 
-char UninlineGlobal::ID = 0;
+char InitGlobal::ID = 0;
 
 
-void UninlineGlobal::uninlineInitValue(LLVMContext &ctx, IRBuilder<> builder,
-                                       GlobalVariable *global, std::vector<Value*> gepIdxs,
-                                       Constant* initValue) {
+void InitGlobal::uninlineInitValue(LLVMContext &ctx,
+                                   IRBuilder<> builder,
+                                   GlobalVariable *global,
+                                   std::vector<Value*> gepIdxs,
+                                   Constant* initValue) {
   debug() << "++ Processing global: " << *global << "\n"
           << "   Current indices: ";
   for (Value* idx: gepIdxs) {
@@ -20,24 +22,28 @@ void UninlineGlobal::uninlineInitValue(LLVMContext &ctx, IRBuilder<> builder,
   if (initValue->isNullValue() || initValue->isZeroValue())
     return;
 
+  // ConstExpr
   if (ConstantExpr *exprInit = dyn_cast<ConstantExpr>(initValue)) {
     // then initialize this field in the global initialization function
     Instruction *exprInstr = exprInit->getAsInstruction();
     builder.Insert(exprInstr);
-
-    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, (ArrayRef<Value*>)gepIdxs);
+    ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
     builder.Insert(gepInst);
-
     Instruction* storeInst = new StoreInst(exprInstr, gepInst);
     builder.Insert(storeInst);
   }
-  else if (isa<ConstantInt>(initValue)) {
-    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, (ArrayRef<Value*>)gepIdxs);
-    builder.Insert(gepInst);
 
+  // Constant Integer
+  else if (isa<ConstantInt>(initValue)) {
+    ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
+    builder.Insert(gepInst);
     Instruction* storeInst = new StoreInst(initValue, gepInst);
     builder.Insert(storeInst);
   }
+
+  // Constant Struct
   else if (ConstantStruct * structInit = dyn_cast<ConstantStruct>(initValue)) {
     for (int i = 0; i < structInit->getNumOperands(); i++) {
       Constant *fieldInit = structInit->getOperand(i);
@@ -81,14 +87,47 @@ void UninlineGlobal::uninlineInitValue(LLVMContext &ctx, IRBuilder<> builder,
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
       uninlineInitValue(ctx, builder, global, currentIdxs, elemInit);
-
     }
   }
 }
 
+/*
+ * Init global variables capture in ‘llvm.global_ctors‘
+ * See https://releases.llvm.org/6.0.1/docs/LangRef.html
+ */
+void InitGlobal::invokeGlobalInitFunctions(IRBuilder<> builder,
+                                           GlobalVariable *global,
+                                           Constant* initValue) {
+  vector<pair<int, Function*>> prioFuncs;
 
-bool UninlineGlobal::runOnModule(Module &M) {
-  // outs() << "Handling globals initialization" << "\n";
+  for (int i = 0; i < initValue->getNumOperands(); i++) {
+    Value *operand = initValue->getOperand(i);
+    if (ConstantStruct *st = dyn_cast<ConstantStruct>(operand)) {
+      if (st->getNumOperands() == 3) {
+        pair<int, Function*> prioFunc;
+        if (ConstantInt* p = dyn_cast<ConstantInt>(st->getOperand(0)))
+          prioFunc.first = p->getValue().getSExtValue();
+        if (Function* f = dyn_cast<Function>(st->getOperand(1)))
+          prioFunc.second = f;
+        prioFuncs.push_back(prioFunc);
+      }
+    }
+  }
+
+  std::sort(prioFuncs.begin(), prioFuncs.end(),
+            [](pair<int, Function*> fp1, pair<int, Function*> fp2) {
+              return (fp1.first < fp2.first);});
+
+  for (pair<int, Function*> fp : prioFuncs) {
+    Function *func = fp.second;
+    Instruction* callInst = CallInst::Create(func);
+    builder.Insert(callInst);
+  }
+
+  return;
+}
+
+bool InitGlobal::runOnModule(Module &M) {
 
   GlobalVariableList &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
@@ -97,12 +136,12 @@ bool UninlineGlobal::runOnModule(Module &M) {
   Type* retType = Type::getVoidTy(ctx);
   vector<Type*> argTypes;
   FunctionType *funcType = FunctionType::get(retType, argTypes, false);
-  Function* funcInitGlobal = Function::Create(funcType, Function::ExternalLinkage,
-                                          0, "__init_globals", nullptr);
-  funcInitGlobal->setDSOLocal(true);
+  Function* funcInit = Function::Create(funcType, Function::ExternalLinkage,
+                                        0, "__init_globals", nullptr);
+  funcInit->setDSOLocal(true);
 
-  BasicBlock *blkInitGlobal = BasicBlock::Create(ctx, "", funcInitGlobal);
-  IRBuilder<> builder(blkInitGlobal);
+  BasicBlock *blkInit = BasicBlock::Create(ctx, "", funcInit);
+  IRBuilder<> builder(blkInit);
 
   for (auto it = globalList.begin(); it != globalList.end(); ++it) {
     GlobalVariable *global = &(*it);
@@ -111,34 +150,44 @@ bool UninlineGlobal::runOnModule(Module &M) {
     if (!(global->hasInitializer()))
       continue;
 
-    Constant* init = global->getInitializer();
-    std::vector<Value*> gepIdxs;
-    gepIdxs.push_back(ConstantInt::get(IntegerType::get(ctx, 32), 0));
-    uninlineInitValue(ctx, builder, global, gepIdxs, init);
+    StringRef globalName = global->getName();
+    Constant* initValue = global->getInitializer();
 
+    // call global vars constructors
+    if (globalName.equals(LLVM_GLOBAL_CTORS)) {
+      invokeGlobalInitFunctions(builder, global, initValue);
+    }
+    // uninline init values of globals
+    else {
+      std::vector<Value*> gepIdxs;
+      gepIdxs.push_back(ConstantInt::get(IntegerType::get(ctx, 32), 0));
+      uninlineInitValue(ctx, builder, global, gepIdxs, initValue);
+    }
   }
 
   // delete the initialization function when it is not needed
-  if (blkInitGlobal->size() != 0) {
+  if (blkInit->size() != 0) {
     Instruction* returnInst = ReturnInst::Create(ctx);
     builder.Insert(returnInst);
 
     // insert the function to the beginning of the list
     FunctionList &funcList = M.getFunctionList();
-    funcList.push_front(funcInitGlobal);
+    funcList.push_front(funcInit);
   }
+
+
   return true;
 }
 
-bool UninlineGlobal::normalizeModule(Module &M) {
+bool InitGlobal::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
           << "Flatten Globals ...\n";
 
-  UninlineGlobal pass;
+  InitGlobal pass;
   return pass.runOnModule(M);
 }
 
-static RegisterPass<UninlineGlobal> X("UninlineGlobal",
+static RegisterPass<InitGlobal> X("InitGlobal",
                                           "Normalize ConstantExpr",
                                           false /* Only looks at CFG */,
                                           false /* Analysis Pass */);
@@ -146,5 +195,5 @@ static RegisterPass<UninlineGlobal> X("UninlineGlobal",
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
                                    legacy::PassManagerBase &PM) {
-                                  PM.add(new UninlineGlobal());
+                                  PM.add(new InitGlobal());
                                 });

@@ -5,7 +5,7 @@ set(SOURCE_FILES
   InlineInternalFunction.cpp
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp
-  UninlineGlobal.cpp
+  InitGlobal.cpp
   UninlineInstruction.cpp)
 
 # Relevant LLVM Components can be found by: llvm-config --components

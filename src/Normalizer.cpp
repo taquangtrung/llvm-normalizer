@@ -11,7 +11,7 @@
 #include "cxxopts/cxxopts.hpp"
 
 #include "Debug.h"
-#include "UninlineGlobal.h"
+#include "InitGlobal.h"
 #include "UninlineInstruction.h"
 #include "UnwrapGEP.h"
 #include "InlineInternalFunction.h"
@@ -72,11 +72,11 @@ bool normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
 
   InlineInternalFunction::normalizeModule(M);
-  ElimUnusedGlobal::normalizeModule(M);
   // UnwrapGEP::normalizeModule(M);
 
-  UninlineGlobal::normalizeModule(M);
+  InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
+
   ElimUnusedGlobal::normalizeModule(M);
   return true;
 }

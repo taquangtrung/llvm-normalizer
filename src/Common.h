@@ -1,3 +1,6 @@
+#ifndef COMMON_H
+#define COMMON_H
+
 #include <iostream>
 
 #include "llvm/IR/Type.h"
@@ -17,3 +20,7 @@ using FunctionList = SymbolTableList<Function>;
 using BasicBlockList = SymbolTableList<BasicBlock>;
 
 using FunctionSet = SmallSetVector<Function*, 16>;
+
+const std::string LLVM_GLOBAL_CTORS = "llvm.global_ctors";
+
+#endif

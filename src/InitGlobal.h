@@ -20,15 +20,21 @@ using namespace llvm;
 
 namespace discover {
 
-struct UninlineGlobal : public ModulePass {
+struct InitGlobal : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  void uninlineInitValue(LLVMContext &ctx, IRBuilder<> builder,
-                         GlobalVariable *global, std::vector<Value*> gepIdxs,
+  void uninlineInitValue(LLVMContext &ctx,
+                         IRBuilder<> builder,
+                         GlobalVariable *global,
+                         std::vector<Value*> gepIdxs,
                          Constant* initValue);
 
-  UninlineGlobal() : ModulePass(ID) {}
+  void invokeGlobalInitFunctions(IRBuilder<> builder,
+                                 GlobalVariable *global,
+                                 Constant* initValue);
+
+  InitGlobal() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };
