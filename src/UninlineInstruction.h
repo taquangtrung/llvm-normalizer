@@ -20,18 +20,13 @@ using namespace llvm;
 
 namespace discover {
 
-struct UninlineConstExpr : public ModulePass {
+struct UninlineInstruction : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  void processGlobalInitValue(LLVMContext &ctx, IRBuilder<> builder,
-                         GlobalVariable *global, std::vector<Value*> gepIdxs,
-                         Constant* initValue);
-  void handleGlobals(Module &M);
-  void handleFunctions(Module &M);
-  void handleInstr(IRBuilder<> builder, Instruction* instr);
+  void uninlineInstr(IRBuilder<> builder, Instruction* instr);
 
-  UninlineConstExpr() : ModulePass(ID) {}
+  UninlineInstruction() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

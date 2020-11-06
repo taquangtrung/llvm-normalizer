@@ -1,14 +1,14 @@
-#include "UninlineConstExpr.h"
+#include "UninlineGlobal.h"
 
 using namespace discover;
 using namespace llvm;
 
-char UninlineConstExpr::ID = 0;
+char UninlineGlobal::ID = 0;
 
 
-void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> builder,
-                                               GlobalVariable *global, std::vector<Value*> gepIdxs,
-                                               Constant* initValue) {
+void UninlineGlobal::uninlineInitValue(LLVMContext &ctx, IRBuilder<> builder,
+                                       GlobalVariable *global, std::vector<Value*> gepIdxs,
+                                       Constant* initValue) {
   debug() << "++ Processing global: " << *global << "\n"
           << "   Current indices: ";
   for (Value* idx: gepIdxs) {
@@ -58,7 +58,7 @@ void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> bui
       else if (IntegerType* intTyp = dyn_cast<IntegerType>(fieldTyp))
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
-      processGlobalInitValue(ctx, builder, global, currentIdxs, fieldInit);
+      uninlineInitValue(ctx, builder, global, currentIdxs, fieldInit);
 
     }
   }
@@ -80,17 +80,14 @@ void UninlineConstExpr::processGlobalInitValue(LLVMContext &ctx, IRBuilder<> bui
       else if (IntegerType* intTyp = dyn_cast<IntegerType>(elemTyp))
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
-      processGlobalInitValue(ctx, builder, global, currentIdxs, elemInit);
+      uninlineInitValue(ctx, builder, global, currentIdxs, elemInit);
 
     }
   }
-
 }
 
-/**
- * un-inline ConstExpr in global variables' initializers
- */
-void UninlineConstExpr::handleGlobals(Module &M) {
+
+bool UninlineGlobal::runOnModule(Module &M) {
   // outs() << "Handling globals initialization" << "\n";
 
   GlobalVariableList &globalList = M.getGlobalList();
@@ -117,7 +114,7 @@ void UninlineConstExpr::handleGlobals(Module &M) {
     Constant* init = global->getInitializer();
     std::vector<Value*> gepIdxs;
     gepIdxs.push_back(ConstantInt::get(IntegerType::get(ctx, 32), 0));
-    processGlobalInitValue(ctx, builder, global, gepIdxs, init);
+    uninlineInitValue(ctx, builder, global, gepIdxs, init);
 
   }
 
@@ -130,70 +127,18 @@ void UninlineConstExpr::handleGlobals(Module &M) {
     FunctionList &funcList = M.getFunctionList();
     funcList.push_front(funcInitGlobal);
   }
-}
-
-/**
- * un-inline ConstExpr in instructions, recursively
- */
-void UninlineConstExpr::handleInstr(IRBuilder<> builder, Instruction* instr) {
-  builder.SetInsertPoint(instr);
-
-  // transform ConstantExpr in operands into new instructions
-  for (int i = 0; i < instr->getNumOperands(); i++) {
-    Value *operand = instr->getOperand(i);
-    if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
-      // outs() << "ConstantExpr: " << *expr << "\n";
-
-      Instruction *exprInstr = expr->getAsInstruction();
-      // outs() << "ConstantExprInstr: " << *exprInstr << "\n";
-
-      builder.Insert(exprInstr);
-      instr->setOperand(i, exprInstr);
-
-      handleInstr(builder, exprInstr);
-    }
-  }
-}
-
-/**
- * un-inline ConstExpr in Functions' instructions
- */
-void UninlineConstExpr::handleFunctions(Module &M) {
-
-  FunctionList &funcList = M.getFunctionList();
-
-  for (auto it = funcList.begin(); it != funcList.end(); ++it) {
-    auto func = it;
-    BasicBlockList &blockList = func->getBasicBlockList();
-
-    for (auto it2 = blockList.begin(); it2 != blockList.end(); ++it2) {
-      BasicBlock *blk = &(*it2);
-      IRBuilder<> builder(blk);
-
-      for (auto it3 = blk->begin(); it3 != blk->end(); ++it3) {
-        Instruction *instr = &(*it3);
-
-        handleInstr(builder, instr);
-      }
-    }
-  }
-}
-
-bool UninlineConstExpr::runOnModule(Module &M) {
-  handleGlobals(M);
-  handleFunctions(M);
   return true;
 }
 
-bool UninlineConstExpr::normalizeModule(Module &M) {
+bool UninlineGlobal::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
-          << "Uninlining Globals and Instructions ...\n";
+          << "Flatten Globals ...\n";
 
-  UninlineConstExpr pass;
+  UninlineGlobal pass;
   return pass.runOnModule(M);
 }
 
-static RegisterPass<UninlineConstExpr> X("UninlineConstExpr",
+static RegisterPass<UninlineGlobal> X("UninlineGlobal",
                                           "Normalize ConstantExpr",
                                           false /* Only looks at CFG */,
                                           false /* Analysis Pass */);
@@ -201,5 +146,5 @@ static RegisterPass<UninlineConstExpr> X("UninlineConstExpr",
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
                                    legacy::PassManagerBase &PM) {
-                                  PM.add(new UninlineConstExpr());
+                                  PM.add(new UninlineGlobal());
                                 });

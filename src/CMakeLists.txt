@@ -5,14 +5,15 @@ set(SOURCE_FILES
   InlineInternalFunction.cpp
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp
-  UninlineConstExpr.cpp)
+  UninlineGlobal.cpp
+  UninlineInstruction.cpp)
 
 # Relevant LLVM Components can be found by: llvm-config --components
 llvm_map_components_to_libnames(LLVM_LIBS
   asmparser core bitreader
   bitwriter irreader ipo scalaropts)
 
-add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
+# add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
 
 if (APPLE)
   add_executable(normalizer ${SOURCE_FILES})
@@ -22,7 +23,7 @@ else()
 endif()
 
 target_link_libraries(normalizer ${LLVM_LIBS})
-target_link_libraries(LLVMUninlineConstExpr ${LLVM_LIBS} )
+# target_link_libraries(LLVMUninlineConstExpr ${LLVM_LIBS} )
 
 # Deploy after build
 add_custom_command(TARGET normalizer POST_BUILD
