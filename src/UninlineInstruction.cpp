@@ -9,7 +9,7 @@ char UninlineInstruction::ID = 0;
 /**
  * un-inline ConstExpr in instructions, recursively
  */
-void UninlineInstruction::uninlineInstr(IRBuilder<> builder, Instruction* instr) {
+void UninlineInstruction::uninlineConstExpr(IRBuilder<> builder, Instruction* instr) {
   builder.SetInsertPoint(instr);
 
   // transform ConstantExpr in operands into new instructions
@@ -24,7 +24,7 @@ void UninlineInstruction::uninlineInstr(IRBuilder<> builder, Instruction* instr)
       builder.Insert(exprInstr);
       instr->setOperand(i, exprInstr);
 
-      uninlineInstr(builder, exprInstr);
+      uninlineConstExpr(builder, exprInstr);
     }
   }
 }
@@ -34,6 +34,7 @@ bool UninlineInstruction::runOnModule(Module &M) {
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     auto func = it;
+
     BasicBlockList &blockList = func->getBasicBlockList();
 
     for (auto it2 = blockList.begin(); it2 != blockList.end(); ++it2) {
@@ -43,7 +44,7 @@ bool UninlineInstruction::runOnModule(Module &M) {
       for (auto it3 = blk->begin(); it3 != blk->end(); ++it3) {
         Instruction *instr = &(*it3);
 
-        uninlineInstr(builder, instr);
+        uninlineConstExpr(builder, instr);
       }
     }
   }

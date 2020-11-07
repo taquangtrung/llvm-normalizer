@@ -24,7 +24,7 @@ struct UninlineInstruction : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  void uninlineInstr(IRBuilder<> builder, Instruction* instr);
+  void uninlineConstExpr(IRBuilder<> builder, Instruction* instr);
 
   UninlineInstruction() : ModulePass(ID) {}
 

@@ -7,6 +7,8 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 
+// #include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
+
 // #include "cxxopts/cxxopts.hpp"
 #include "cxxopts/cxxopts.hpp"
 
@@ -68,17 +70,17 @@ Arguments parseArguments(int argc, char** argv) {
   return args;
 }
 
-bool normalizeModule(Module& M) {
+// void normalizeFunction(Function& F) {
+//   FunctionPass *instCombinePass = createAggressiveInstCombinerPass();
+//   instCombinePass->runOnFunction(F);
+// }
+
+void normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
-
   InlineInternalFunction::normalizeModule(M);
-  // UnwrapGEP::normalizeModule(M);
-
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
-
   ElimUnusedGlobal::normalizeModule(M);
-  return true;
 }
 
 
@@ -90,29 +92,30 @@ int main(int argc, char** argv) {
   string outputFile = args.outputFile;
 
   // process bitcode
-  unique_ptr<Module> module;
+  // unique_ptr<Module> M;
   SMDiagnostic err;
   static LLVMContext context;
 
-  module = parseIRFile(inputFile, err, context);
-
+  std::unique_ptr<Module> M = parseIRFile(inputFile, err, context);
 
   debug() << "===============================\n"
           << "BEFORE NORMALIZATION:\n";
-  module->print(debug(), nullptr);
+  M->print(debug(), nullptr);
 
-  // normalize module
-  normalizeModule(*module);
+  // FunctionList &Funcs = M->getFunctionList();
+  // for (Function &F : Funcs) {
+  //   normalizeFunction(F);
+  // }
 
   debug() << "===============================\n"
           << "AFTER NORMALIZATION:\n";
-  module->print(debug(), nullptr);
+  M->print(debug(), nullptr);
 
   // write output
   if (!outputFile.empty()) {
     std::error_code EC;
     raw_fd_ostream OS(outputFile, EC, llvm::sys::fs::F_None);
-    WriteBitcodeToFile(*module, OS);
+    WriteBitcodeToFile(*M, OS);
     OS.flush();
   }
 
