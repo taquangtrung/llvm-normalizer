@@ -107,6 +107,8 @@ int main(int argc, char** argv) {
   //   normalizeFunction(F);
   // }
 
+  normalizeModule(*M);
+
   debug() << "===============================\n"
           << "AFTER NORMALIZATION:\n";
   M->print(debug(), nullptr);
