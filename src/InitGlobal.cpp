@@ -18,6 +18,7 @@ void InitGlobal::uninlineInitValue(LLVMContext &ctx,
   }
   debug() << "\n";
   debug() << "   Init value: " << *initValue << "\n";
+  debug() << "   Init value type: " << *(initValue->getType()) << "\n";
 
   if (initValue->isNullValue() || initValue->isZeroValue())
     return;
@@ -35,7 +36,9 @@ void InitGlobal::uninlineInitValue(LLVMContext &ctx,
   }
 
   // Constant Integer
-  else if (isa<ConstantInt>(initValue)) {
+  else if (isa<ConstantInt>(initValue) ||
+           isa<Function>(initValue) ||
+           isa<GlobalVariable>(initValue)) {
     ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
     Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
     builder.Insert(gepInst);
@@ -54,8 +57,6 @@ void InitGlobal::uninlineInitValue(LLVMContext &ctx,
       Value* fieldIdx = ConstantInt::get(IntegerType::get(ctx, 32), i);
       std::vector<Value*> currentIdxs(gepIdxs);
       currentIdxs.push_back(fieldIdx);
-
-      debug() << "  field init: " << *fieldInit << "\n";
 
       Type* fieldTyp = fieldInit->getType();
 
@@ -181,7 +182,7 @@ bool InitGlobal::runOnModule(Module &M) {
 
 bool InitGlobal::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
-          << "Flatten Globals ...\n";
+          << "Init Globals ...\n";
 
   InitGlobal pass;
   return pass.runOnModule(M);
