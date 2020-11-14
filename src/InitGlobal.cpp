@@ -5,13 +5,37 @@ using namespace llvm;
 
 char InitGlobal::ID = 0;
 
+void InitGlobal::uninlinePointerInitValue(LLVMContext &ctx,
+                                          IRBuilder<> builder,
+                                          GlobalVariable *global,
+                                          Constant* initValue,
+                                          PointerType* initType) {
 
-void InitGlobal::uninlineInitValue(LLVMContext &ctx,
-                                   IRBuilder<> builder,
-                                   GlobalVariable *global,
-                                   std::vector<Value*> gepIdxs,
-                                   Constant* initValue) {
-  debug() << "++ Processing global: " << *global << "\n"
+  debug() << "++ Processing Pointer Global: " << *global << "\n";
+  debug() << "   Init value: " << *initValue << "\n";
+  debug() << "   Init value type: " << *(initValue->getType()) << "\n";
+
+  if (initValue->isNullValue())
+    return;
+
+  // then initialize this field in the global initialization function
+  // Instruction* loadInst = new LoadInst(global);
+  // builder.Insert(loadInst);
+  if (ConstantExpr *exprInit = dyn_cast<ConstantExpr>(initValue)) {
+    Instruction *exprInstr = exprInit->getAsInstruction();
+    builder.Insert(exprInstr);
+    initValue->setOperand(0, ConstantPointerNull::get(initType));
+    Instruction* storeInst = new StoreInst(exprInstr, global);
+    builder.Insert(storeInst);
+  }
+}
+
+void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
+                                            IRBuilder<> builder,
+                                            GlobalVariable *global,
+                                            std::vector<Value*> gepIdxs,
+                                            Constant* initValue) {
+  debug() << "++ Processing Aggregate Global: " << *global << "\n"
           << "   Current indices: ";
   for (Value* idx: gepIdxs) {
     debug() << *idx << ",  ";
@@ -65,7 +89,7 @@ void InitGlobal::uninlineInitValue(LLVMContext &ctx,
       else if (IntegerType* intTyp = dyn_cast<IntegerType>(fieldTyp))
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
-      uninlineInitValue(ctx, builder, global, currentIdxs, fieldInit);
+      uninlineAggregateInitValue(ctx, builder, global, currentIdxs, fieldInit);
 
     }
   }
@@ -87,7 +111,7 @@ void InitGlobal::uninlineInitValue(LLVMContext &ctx,
       else if (IntegerType* intTyp = dyn_cast<IntegerType>(elemTyp))
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
-      uninlineInitValue(ctx, builder, global, currentIdxs, elemInit);
+      uninlineAggregateInitValue(ctx, builder, global, currentIdxs, elemInit);
     }
   }
 }
@@ -153,16 +177,20 @@ bool InitGlobal::runOnModule(Module &M) {
 
     StringRef globalName = global->getName();
     Constant* initValue = global->getInitializer();
+    Type* initType = initValue->getType();
 
     // call global vars constructors
     if (globalName.equals(LLVM_GLOBAL_CTORS)) {
       invokeGlobalInitFunctions(builder, global, initValue);
     }
     // uninline init values of globals
-    else {
+    else if (initType->isAggregateType()) {
       std::vector<Value*> gepIdxs;
       gepIdxs.push_back(ConstantInt::get(IntegerType::get(ctx, 32), 0));
-      uninlineInitValue(ctx, builder, global, gepIdxs, initValue);
+      uninlineAggregateInitValue(ctx, builder, global, gepIdxs, initValue);
+    }
+    else if (PointerType* pInitType = dyn_cast<PointerType>(initType)) {
+      uninlinePointerInitValue(ctx, builder, global, initValue, pInitType);
     }
   }
 
