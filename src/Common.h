@@ -18,6 +18,7 @@ using namespace llvm;
 using GlobalVariableList = SymbolTableList<GlobalVariable>;
 using FunctionList = SymbolTableList<Function>;
 using BasicBlockList = SymbolTableList<BasicBlock>;
+using InstList = SymbolTableList<Instruction>;
 
 using FunctionSet = SmallSetVector<Function*, 16>;
 

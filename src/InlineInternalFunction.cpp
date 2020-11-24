@@ -15,6 +15,30 @@ bool hasGlobalValue(Function &F) {
   return false;
 }
 
+
+// A function is called a direct wrapper function if it only calls another
+// function and return the result;
+bool isCallWrapperFunc(Function &F) {
+  debug() << "Checking call wrapper function: " << F.getName() << "\n";
+  BasicBlockList &blockList = F.getBasicBlockList();
+  if (blockList.size() == 1) {
+    debug() << " has 1 block\n";
+    BasicBlock &blk = blockList.front();
+    InstList &instList = blk.getInstList();
+    if (instList.size() == 2) {
+      debug() << " has 2 instructions\n";
+      Instruction &firstInstr = instList.front();
+      Instruction &secondInstr = instList.back();
+      if (isa<CallInst>(&firstInstr) && isa<ReturnInst>(&secondInstr)) {
+        debug() << " --> Found one\n";
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 Function* InlineInternalFunction::findCandidate(Module &M,
                                                 FunctionSet processedFuncs) {
   FunctionList &funcList = M.getFunctionList();
@@ -31,6 +55,9 @@ Function* InlineInternalFunction::findCandidate(Module &M,
 
     if (visited || hasGlobalValue(*func))
       continue;
+
+    // if (isCallWrapperFunc(*func))
+    //   return func;
 
     int numParams = func->getNumOperands();
     GlobalValue::LinkageTypes linkage = func->getLinkage();
