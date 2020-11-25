@@ -11,9 +11,13 @@
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/LegacyPassManager.h"
 
+#include "llvm/ADT/SetVector.h"
+
 
 using namespace std;
 using namespace llvm;
+
+namespace llvm {
 
 using GlobalVariableList = SymbolTableList<GlobalVariable>;
 using FunctionList = SymbolTableList<Function>;
@@ -23,5 +27,9 @@ using InstList = SymbolTableList<Instruction>;
 using FunctionSet = SmallSetVector<Function*, 16>;
 
 const std::string LLVM_GLOBAL_CTORS = "llvm.global_ctors";
+
+bool isTestingFunc(Function* F);
+
+}
 
 #endif

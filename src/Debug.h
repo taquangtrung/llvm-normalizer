@@ -9,10 +9,11 @@
 
 namespace llvm {
 
-  extern bool debugging;
+extern bool debugging;
 
-  raw_ostream &debug();
-  raw_ostream &error();
+raw_ostream &debug();
+raw_ostream &error();
 
 }
+
 #endif

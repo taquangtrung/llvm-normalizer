@@ -16,26 +16,41 @@ bool hasGlobalValue(Function &F) {
 }
 
 
-// A function is called a direct wrapper function if it only calls another
-// function and return the result;
-bool isCallWrapperFunc(Function &F) {
-  debug() << "Checking call wrapper function: " << F.getName() << "\n";
-  BasicBlockList &blockList = F.getBasicBlockList();
+// A function is called a transfer-call function if it only performs
+// bitcast, call another function once and return the result;
+bool isFuncTransferCall(Function *F) {
+  debug() << "Checking direct-transfer-call function: " << F->getName() << "\n";
+  BasicBlockList &blockList = F->getBasicBlockList();
   if (blockList.size() == 1) {
     debug() << " has 1 block\n";
-    BasicBlock &blk = blockList.front();
-    InstList &instList = blk.getInstList();
-    if (instList.size() == 2) {
-      debug() << " has 2 instructions\n";
-      Instruction &firstInstr = instList.front();
-      Instruction &secondInstr = instList.back();
-      if (isa<CallInst>(&firstInstr) && isa<ReturnInst>(&secondInstr)) {
-        debug() << " --> Found one\n";
-        return true;
-      }
+    BasicBlock &BB = blockList.front();
+    for (Instruction &I : BB) {
+      if (!(isa<CallInst>(&I)) &&
+          !(isa<BitCastInst>(&I)) &&
+          !(isa<ReturnInst>(&I)))
+        return false;
     }
+    return true;
   }
+  return false;
+}
 
+// A function is called a transfer-call function if it only performs
+// bitcast, call another function once and return the result;
+bool isFuncTransferGEP(Function *F) {
+  debug() << "Checking direct-transfer-call function: " << F->getName() << "\n";
+  BasicBlockList &blockList = F->getBasicBlockList();
+  if (blockList.size() == 1) {
+    debug() << " has 1 block\n";
+    BasicBlock &BB = blockList.front();
+    for (Instruction &I : BB) {
+      if (!(isa<GetElementPtrInst>(&I)) &&
+          !(isa<BitCastInst>(&I)) &&
+          !(isa<ReturnInst>(&I)))
+        return false;
+    }
+    return true;
+  }
   return false;
 }
 
@@ -53,20 +68,19 @@ Function* InlineInternalFunction::findCandidate(Module &M,
         break;
       }
 
-    if (visited || hasGlobalValue(*func))
+    if (visited || isTestingFunc(func))
       continue;
 
-    // if (isCallWrapperFunc(*func))
+    // if (isFuncTransferCall(func))
     //   return func;
 
-    int numParams = func->getNumOperands();
-    GlobalValue::LinkageTypes linkage = func->getLinkage();
-    AttributeList attributes = func->getAttributes();
+    if (!(func->hasLinkOnceLinkage()) &&
+        !(func->hasLinkOnceODRLinkage()) &&
+        !(func->hasInternalLinkage()))
+      continue;
 
-    if (func->hasLinkOnceLinkage() ||
-        func->hasLinkOnceODRLinkage() ||
-        func->hasInternalLinkage() ||
-        func->getDereferenceableBytes(0) > 0)
+    if (isFuncTransferCall(func) ||
+        isFuncTransferGEP(func))
       return func;
   }
 

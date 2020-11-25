@@ -9,7 +9,7 @@ bool ElimUnusedAuxFunction::runOnModule(Module &M) {
 
   FunctionList &funcList = M.getFunctionList();
 
-  SmallSetVector<Function*, 16> unusedFuncs;
+  FunctionSet unusedFuncs;
 
   for (auto it = funcList.begin(); it != funcList.end(); ++it) {
     Function *func = &(*it);
