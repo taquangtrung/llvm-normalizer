@@ -26,7 +26,7 @@ using namespace llvm;
 
 namespace discover {
 
-struct InlineInternalFunction : public ModulePass {
+struct InlineSimpleFunction : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
@@ -34,7 +34,7 @@ struct InlineInternalFunction : public ModulePass {
   Function* findCandidate(Module &M, FunctionSet visited);
   void inlineFunction(Module &M, Function* func);
 
-  InlineInternalFunction() : ModulePass(ID) {}
+  InlineSimpleFunction() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

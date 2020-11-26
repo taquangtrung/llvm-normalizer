@@ -28,7 +28,7 @@ using FunctionSet = SmallSetVector<Function*, 16>;
 
 const std::string LLVM_GLOBAL_CTORS = "llvm.global_ctors";
 
-bool isTestingFunc(Function* F);
+bool isDiscoverTestingFunc(Function&);
 
 }
 

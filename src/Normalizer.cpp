@@ -16,7 +16,7 @@
 #include "InitGlobal.h"
 #include "UninlineInstruction.h"
 #include "UnwrapGEP.h"
-#include "InlineInternalFunction.h"
+#include "InlineSimpleFunction.h"
 #include "ElimUnusedAuxFunction.h"
 #include "ElimUnusedGlobal.h"
 
@@ -77,7 +77,7 @@ Arguments parseArguments(int argc, char** argv) {
 
 void normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
-  InlineInternalFunction::normalizeModule(M);
+  InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
@@ -112,6 +112,14 @@ int main(int argc, char** argv) {
   debug() << "===============================\n"
           << "AFTER NORMALIZATION:\n";
   M->print(debug(), nullptr);
+
+  // std::string str;
+  // llvm::raw_string_ostream rso(str);
+  // if (verifyModule(M, &rso)) {
+  //   debug() << "After Normalizing\n";
+  //   debug() << "Module is broken: " << rso.str() << "\n";
+  //   debug() << M;
+  // }
 
   // write output
   if (!outputFile.empty()) {

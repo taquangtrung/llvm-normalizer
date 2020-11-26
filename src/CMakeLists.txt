@@ -3,7 +3,7 @@ set(SOURCE_FILES
   Debug.cpp
   Normalizer.cpp
   UnwrapGEP.cpp
-  InlineInternalFunction.cpp
+  InlineSimpleFunction.cpp
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp
   InitGlobal.cpp
