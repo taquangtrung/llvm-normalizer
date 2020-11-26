@@ -55,24 +55,21 @@ bool isGEPTransferFunc(Function &F) {
 }
 
 Function* InlineSimpleFunction::findCandidate(Module &M,
-                                              FunctionSet processedFuncs) {
+                                              FunctionSet attemptedFuncs) {
   FunctionList &funcList = M.getFunctionList();
 
   for (Function &F : funcList) {
-    debug() << "Checking function: " << F.getName() << "\n";
-    debug() << " is declaration? " << F.isDeclaration() << "\n";
-
-    // if (F.isDeclaration() || )
-    //   continue;
-
-    bool procesed = false;
-    for (Function *f: processedFuncs)
+    bool attempted = false;
+    for (Function *f: attemptedFuncs) {
       if (f->getName().equals(F.getName())) {
-        procesed = true;
+        attempted = true;
         break;
       }
+    }
 
-    if (procesed || isDiscoverTestingFunc(F))
+    debug() << " processed: " << attempted << "\n";
+
+    if (attempted || isDiscoverTestingFunc(F))
       continue;
 
     if (!(F.hasLinkOnceLinkage()) && !(F.hasLinkOnceODRLinkage()) &&
@@ -87,7 +84,7 @@ Function* InlineSimpleFunction::findCandidate(Module &M,
   return NULL;
 }
 
-void InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
+bool InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
   debug() << "* Start to inline function: " << F->getName() << "\n";
   StringRef funcName = F->getName();
   llvm::InlineFunctionInfo IFI;
@@ -110,22 +107,25 @@ void InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
     if (F->getNumUses() == 0) {
       F->eraseFromParent();
       debug() << "    Removed from parent!\n";
+      return true;
     }
   }
-  else debug() << "    Inline failed!\n";
+
+  debug() << "    Inline failed!\n";
+  return false;
 }
 
 bool InlineSimpleFunction::runOnModule(Module &M) {
-  FunctionSet processedFuncs = FunctionSet();
+  FunctionSet attemptedFuncs = FunctionSet();
 
   while (true) {
-    Function *F = findCandidate(M, processedFuncs);
+    Function *F = findCandidate(M, attemptedFuncs);
 
     if (!F)
       break;
 
-    inlineFunction(M, F);
-    processedFuncs.insert(F);
+    if (!inlineFunction(M, F))
+      attemptedFuncs.insert(F);
   }
 
   return true;

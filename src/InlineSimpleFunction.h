@@ -32,7 +32,7 @@ struct InlineSimpleFunction : public ModulePass {
 
   void setInlineableFunctions(Module &M);
   Function* findCandidate(Module &M, FunctionSet visited);
-  void inlineFunction(Module &M, Function* func);
+  bool inlineFunction(Module &M, Function* func);
 
   InlineSimpleFunction() : ModulePass(ID) {}
 
