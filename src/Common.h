@@ -29,6 +29,7 @@ using FunctionSet = SmallSetVector<Function*, 16>;
 const std::string LLVM_GLOBAL_CTORS = "llvm.global_ctors";
 
 bool isDiscoverTestingFunc(Function&);
+void replaceOperand(Function *func, Value *oldOpr, Value *newOpr);
 
 }
 

@@ -19,6 +19,7 @@
 #include "InlineSimpleFunction.h"
 #include "ElimUnusedAuxFunction.h"
 #include "ElimUnusedGlobal.h"
+#include "ElimCommonPHI.h"
 
 using namespace std;
 using namespace llvm;
@@ -80,6 +81,7 @@ void normalizeModule(Module& M) {
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
+  ElimCommonPHI::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }
 

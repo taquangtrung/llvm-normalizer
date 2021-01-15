@@ -20,15 +20,15 @@ using namespace llvm;
 
 namespace discover {
 
-struct UnwrapGEP : public ModulePass {
+struct ElimCommonPHI : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
+  PHINode* findPHINodeOfSameIncoming(PHINode *instr);
   bool processFunction(Function *func);
-
   void handleFunctions(Module &M);
 
-  UnwrapGEP() : ModulePass(ID) {}
+  ElimCommonPHI() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

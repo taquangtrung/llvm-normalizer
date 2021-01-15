@@ -6,24 +6,6 @@ using namespace llvm;
 char UnwrapGEP::ID = 0;
 
 
-void UnwrapGEP::replaceOperand(Function *func, Value *replacee, Value *replacer) {
-  BasicBlockList &blockList = func->getBasicBlockList();
-
-  for (auto it = blockList.begin(); it != blockList.end(); ++it) {
-    BasicBlock *blk = &(*it);
-
-    for (auto it2 = blk->begin(); it2 != blk->end(); ++it2) {
-      Instruction *instr = &(*it2);
-
-      for (int i = 0; i < instr->getNumOperands(); i++) {
-        Value *operand = instr->getOperand(i);
-        if (operand == replacee)
-          instr->setOperand(i, replacer);
-      }
-    }
-  }
-}
-
 bool UnwrapGEP::processFunction(Function *func) {
   BasicBlockList &blockList = func->getBasicBlockList();
   bool stop = true;
@@ -42,7 +24,7 @@ bool UnwrapGEP::processFunction(Function *func) {
           if (ConstantInt *idx = dyn_cast<ConstantInt>(firstIdx)) {
             if (idx->getValue() == 0) {
               Value *replacer = gepInstr->getOperand(0);
-              replaceOperand(func, gepInstr, replacer);
+              llvm::replaceOperand(func, gepInstr, replacer);
               gepInstr->eraseFromParent();
               return true;
             }
