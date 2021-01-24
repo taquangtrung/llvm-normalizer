@@ -2,7 +2,6 @@ set(SOURCE_FILES
   Common.cpp
   Debug.cpp
   Normalizer.cpp
-  UnwrapGEP.cpp
   InlineSimpleFunction.cpp
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp

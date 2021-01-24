@@ -76,8 +76,11 @@ Function* InlineSimpleFunction::findCandidate(Module &M,
         !(F.hasInternalLinkage()))
       continue;
 
-    if (isCallTransferFunc(F) || isGEPTransferFunc(F)) {
+    if (isCallTransferFunc(F)) {
       return &F;
+
+    // if (isGEPTransferFunc(F)) {
+    //     return &F;
     }
   }
 

@@ -82,7 +82,7 @@ bool ElimCommonPHI::normalizeModule(Module &M) {
 }
 
 static RegisterPass<ElimCommonPHI> X("ElimCommonPHI",
-                                 "Unwrap GEP Instruction of only 1 index 0",
+                                 "ElimCommonPHI",
                                  false /* Only looks at CFG */,
                                  false /* Analysis Pass */);
 

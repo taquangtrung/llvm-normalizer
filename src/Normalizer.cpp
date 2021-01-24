@@ -15,7 +15,6 @@
 #include "Debug.h"
 #include "InitGlobal.h"
 #include "UninlineInstruction.h"
-#include "UnwrapGEP.h"
 #include "InlineSimpleFunction.h"
 #include "ElimUnusedAuxFunction.h"
 #include "ElimUnusedGlobal.h"
