@@ -28,6 +28,8 @@ typedef struct Arguments {
   string inputFile;
   string outputFile;
   bool debugging;
+  bool print_input_program;
+  bool print_output_program;
 } Arguments;
 
 Arguments parseArguments(int argc, char** argv) {
@@ -40,6 +42,8 @@ Arguments parseArguments(int argc, char** argv) {
     ("o", "Output file", cxxopts::value<std::string>())
     ("output", "Output file", cxxopts::value<std::string>())
     ("debug", "Enable debugging")
+    ("pip", "Print input program")
+    ("pop", "Print output program")
     ("help", "Help");
 
   // parse arguments by positional and flags
@@ -64,8 +68,10 @@ Arguments parseArguments(int argc, char** argv) {
     cout << "Output File: " << outputFile << std::endl;
   }
 
-  // get debugging flag
+  // get some debugging flags
   debugging = parsedOptions["debug"].as<bool>();
+  print_input_program = parsedOptions["pip"].as<bool>();
+  print_output_program = parsedOptions["pop"].as<bool>();
 
   return args;
 }
@@ -99,9 +105,11 @@ int main(int argc, char** argv) {
 
   std::unique_ptr<Module> M = parseIRFile(inputFile, err, context);
 
-  debug() << "===============================\n"
-          << "BEFORE NORMALIZATION:\n";
-  M->print(debug(), nullptr);
+  if (print_input_program) {
+    debug() << "===============================\n"
+            << "BEFORE NORMALIZATION:\n";
+    M->print(debug(), nullptr);
+  }
 
   // FunctionList &Funcs = M->getFunctionList();
   // for (Function &F : Funcs) {
@@ -110,9 +118,11 @@ int main(int argc, char** argv) {
 
   normalizeModule(*M);
 
-  debug() << "===============================\n"
-          << "AFTER NORMALIZATION:\n";
-  M->print(debug(), nullptr);
+  if (print_output_program) {
+    debug() << "===============================\n"
+            << "AFTER NORMALIZATION:\n";
+    M->print(debug(), nullptr);
+  }
 
   // std::string str;
   // llvm::raw_string_ostream rso(str);

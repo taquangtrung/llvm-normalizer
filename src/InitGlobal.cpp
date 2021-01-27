@@ -24,7 +24,8 @@ void InitGlobal::uninlinePointerInitValue(LLVMContext &ctx,
   if (ConstantExpr *exprInit = dyn_cast<ConstantExpr>(initValue)) {
     Instruction *exprInstr = exprInit->getAsInstruction();
     builder.Insert(exprInstr);
-    initValue->setOperand(0, ConstantPointerNull::get(initType));
+    global->setOperand(0, ConstantPointerNull::get(initType));
+    // debug() << "      New init value: " << *initValue << "\n";
     Instruction* storeInst = new StoreInst(exprInstr, global);
     builder.Insert(storeInst);
   }
@@ -35,14 +36,14 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
                                             GlobalVariable *global,
                                             std::vector<Value*> gepIdxs,
                                             Constant* initValue) {
-  debug() << "++ Processing Aggregate Global: " << *global << "\n"
-          << "   Current indices: ";
-  for (Value* idx: gepIdxs) {
-    debug() << *idx << ",  ";
-  }
-  debug() << "\n";
-  debug() << "   Init value: " << *initValue << "\n";
-  debug() << "   Init value type: " << *(initValue->getType()) << "\n";
+  // debug() << "++ Processing Aggregate Global: " << *global << "\n"
+  //         << "   Current indices: ";
+  // for (Value* idx: gepIdxs) {
+  //   debug() << *idx << ",  ";
+  // }
+  // debug() << "\n";
+  // debug() << "   Init value: " << *initValue << "\n";
+  // debug() << "   Init value type: " << *(initValue->getType()) << "\n";
 
   if (initValue->isNullValue() || initValue->isZeroValue())
     return;
@@ -54,6 +55,7 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
     builder.Insert(exprInstr);
     ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
     Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
+    // debug() << "   New GepInst: " << *gepInst << "\n";
     builder.Insert(gepInst);
     Instruction* storeInst = new StoreInst(exprInstr, gepInst);
     builder.Insert(storeInst);
@@ -65,6 +67,7 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
            isa<GlobalVariable>(initValue)) {
     ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
     Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
+    // debug() << "   New GepInst: " << *gepInst << "\n";
     builder.Insert(gepInst);
     Instruction* storeInst = new StoreInst(initValue, gepInst);
     builder.Insert(storeInst);
@@ -90,7 +93,6 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
         structInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
       uninlineAggregateInitValue(ctx, builder, global, currentIdxs, fieldInit);
-
     }
   }
 
@@ -109,7 +111,7 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
       if (PointerType* elemTyp = dyn_cast<PointerType>(elemInit->getType()))
         arrayInit->setOperand(i, ConstantPointerNull::get(elemTyp));
       else if (IntegerType* intTyp = dyn_cast<IntegerType>(elemTyp))
-        structInit->setOperand(i, ConstantInt::get(intTyp, 0));
+        arrayInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
       uninlineAggregateInitValue(ctx, builder, global, currentIdxs, elemInit);
     }
@@ -216,10 +218,9 @@ bool InitGlobal::normalizeModule(Module &M) {
   return pass.runOnModule(M);
 }
 
-static RegisterPass<InitGlobal> X("InitGlobal",
-                                          "Normalize ConstantExpr",
-                                          false /* Only looks at CFG */,
-                                          false /* Analysis Pass */);
+static RegisterPass<InitGlobal> X("InitGlobal", "Normalize Globals",
+                                  false /* Only looks at CFG */,
+                                  false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,

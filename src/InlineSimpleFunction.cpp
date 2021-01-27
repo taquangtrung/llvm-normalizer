@@ -19,10 +19,10 @@ bool hasGlobalValue(Function &F) {
 // A function is called a transfer-call function if it only performs
 // bitcast, call another function once and return the result;
 bool isCallTransferFunc(Function &F) {
-  debug() << "Checking Call-Transfer function: " << F.getName() << "\n";
+  // debug() << "Checking Call-Transfer function: " << F.getName() << "\n";
   BasicBlockList &blockList = F.getBasicBlockList();
   if (blockList.size() == 1) {
-    debug() << " has 1 block\n";
+    // debug() << " has 1 block\n";
     BasicBlock &B = blockList.front();
     for (Instruction &I : B) {
       if (!(isa<CallInst>(&I)) &&
@@ -38,10 +38,10 @@ bool isCallTransferFunc(Function &F) {
 // A function is called a transfer-call function if it only performs
 // bitcast, call another function once and return the result;
 bool isGEPTransferFunc(Function &F) {
-  debug() << "Checking GEP-Transfer function: " << F.getName() << "\n";
+  // debug() << "Checking GEP-Transfer function: " << F.getName() << "\n";
   BasicBlockList &blockList = F.getBasicBlockList();
   if (blockList.size() == 1) {
-    debug() << " has 1 block\n";
+    // debug() << " has 1 block\n";
     BasicBlock &B = blockList.front();
     for (Instruction &I : B) {
       if (!(isa<GetElementPtrInst>(&I)) &&
@@ -67,7 +67,7 @@ Function* InlineSimpleFunction::findCandidate(Module &M,
       }
     }
 
-    debug() << " processed: " << attempted << "\n";
+    // debug() << " processed: " << attempted << "\n";
 
     if (attempted || isDiscoverTestingFunc(F))
       continue;
@@ -76,12 +76,11 @@ Function* InlineSimpleFunction::findCandidate(Module &M,
         !(F.hasInternalLinkage()))
       continue;
 
-    if (isCallTransferFunc(F)) {
+    if (isCallTransferFunc(F))
       return &F;
 
-    // if (isGEPTransferFunc(F)) {
-    //     return &F;
-    }
+    if (isGEPTransferFunc(F))
+      return &F;
   }
 
   return NULL;
@@ -109,12 +108,17 @@ bool InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
     debug() << "    Inline succeeded!\n";
     if (F->getNumUses() == 0) {
       F->eraseFromParent();
-      debug() << "    Removed from parent!\n";
+      debug() << "    Removed the inlined function from parent!\n";
       return true;
+    }
+    else {
+      debug() << "    Failed to remove the inlined function from parent!\n";
+      return false;
     }
   }
 
   debug() << "    Inline failed!\n";
+
   return false;
 }
 
