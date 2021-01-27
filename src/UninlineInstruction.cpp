@@ -5,12 +5,10 @@ using namespace llvm;
 
 char UninlineInstruction::ID = 0;
 
-
 /**
  * un-inline ConstExpr in instructions, recursively
  */
 void UninlineInstruction::uninlineConstExpr(IRBuilder<> builder, Instruction* instr) {
-  builder.SetInsertPoint(instr);
 
   // transform ConstantExpr in operands into new instructions
   for (int i = 0; i < instr->getNumOperands(); i++) {
@@ -20,6 +18,21 @@ void UninlineInstruction::uninlineConstExpr(IRBuilder<> builder, Instruction* in
 
       Instruction *exprInstr = expr->getAsInstruction();
       // outs() << "ConstantExprInstr: " << *exprInstr << "\n";
+
+      // debug() << " ConstantExpr: " << *exprInstr << "\n";
+
+      if (PHINode* phiInstr = dyn_cast<PHINode>(instr)){
+        // set the insertion point in the incoming blocks to make sure
+        // the current PHINode is always at the beginning of this block
+        BasicBlock* incomingBlock = phiInstr->getIncomingBlock(i);
+        Instruction* terminator = incomingBlock->getTerminator();
+        builder.SetInsertPoint(terminator);
+      }
+      else {
+        // set the insertion point in this block
+        builder.SetInsertPoint(instr);
+      }
+
 
       builder.Insert(exprInstr);
       instr->setOperand(i, exprInstr);
@@ -54,7 +67,7 @@ bool UninlineInstruction::runOnModule(Module &M) {
 
 bool UninlineInstruction::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
-          << "Uninlining Globals and Instructions ...\n";
+          << "Uninlining Instructions ...\n";
 
   UninlineInstruction pass;
   return pass.runOnModule(M);
