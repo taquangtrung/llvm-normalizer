@@ -86,8 +86,8 @@ void normalizeModule(Module& M) {
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
-  // ElimCommonPHI::normalizeModule(M);
-  // ElimUnusedGlobal::normalizeModule(M);
+  ElimCommonPHI::normalizeModule(M);
+  ElimUnusedGlobal::normalizeModule(M);
 }
 
 
