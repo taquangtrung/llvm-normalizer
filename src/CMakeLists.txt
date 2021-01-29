@@ -6,6 +6,7 @@ set(SOURCE_FILES
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp
   ElimCommonPHI.cpp
+  ElimCommonGEP.cpp
   InitGlobal.cpp
   UninlineInstruction.cpp)
 

@@ -15,13 +15,18 @@ PHINode* ElimCommonPHI::findPHINodeOfSameIncoming(PHINode *instr) {
       if (otherInstr == instr)
         continue;
 
-      if (otherInstr->getNumIncomingValues() == numIncoming) {
-        for (int i = 0; i < numIncoming; i++)
-          if (otherInstr->getIncomingValue(i) != instr->getIncomingValue(i))
-            return NULL;
+      if (otherInstr->getNumIncomingValues() != numIncoming)
+        continue;
 
+      bool hasSameIncomings = true;
+
+      for (int i = 0; i < numIncoming; i++)
+        if (otherInstr->getIncomingValue(i) != instr->getIncomingValue(i)) {
+          hasSameIncomings = false;
+        }
+
+      if (hasSameIncomings)
         return otherInstr;
-      }
     }
   }
 
@@ -40,9 +45,11 @@ bool ElimCommonPHI::processFunction(Function *func) {
       Instruction *instr = &(*it2);
 
       if (PHINode* phiInstr = dyn_cast<PHINode>(instr)) {
+        debug() << "Processing " << *instr << "\n";
         PHINode *otherInstr = findPHINodeOfSameIncoming(phiInstr);
 
         if (otherInstr != NULL) {
+          debug() << "   substitute " << *otherInstr << " by " << *phiInstr << "\n";
           llvm::replaceOperand(func, otherInstr, phiInstr);
           otherInstr->eraseFromParent();
           return true;
@@ -77,6 +84,8 @@ bool ElimCommonPHI::runOnModule(Module &M) {
 }
 
 bool ElimCommonPHI::normalizeModule(Module &M) {
+  debug() << "\n=========================================\n"
+          << "Eliminating Common PHI...\n";
   ElimCommonPHI pass;
   return pass.runOnModule(M);
 }
