@@ -20,6 +20,7 @@
 #include "ElimUnusedGlobal.h"
 #include "ElimCommonPHI.h"
 #include "ElimCommonGEP.h"
+#include "CombineGEP.h"
 
 using namespace std;
 using namespace llvm;
@@ -89,6 +90,7 @@ void normalizeModule(Module& M) {
   UninlineInstruction::normalizeModule(M);
   ElimCommonPHI::normalizeModule(M);
   ElimCommonGEP::normalizeModule(M);
+  CombineGEP::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }
 

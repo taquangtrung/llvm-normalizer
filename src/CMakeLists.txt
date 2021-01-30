@@ -7,6 +7,7 @@ set(SOURCE_FILES
   ElimUnusedGlobal.cpp
   ElimCommonPHI.cpp
   ElimCommonGEP.cpp
+  CombineGEP.cpp
   InitGlobal.cpp
   UninlineInstruction.cpp)
 
