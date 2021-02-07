@@ -18,8 +18,7 @@
 #include "InlineSimpleFunction.h"
 #include "ElimUnusedAuxFunction.h"
 #include "ElimUnusedGlobal.h"
-#include "ElimCommonPHI.h"
-#include "ElimCommonGEP.h"
+#include "ElimCommonInstruction.h"
 #include "CombineGEP.h"
 
 using namespace std;
@@ -88,8 +87,7 @@ void normalizeModule(Module& M) {
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
-  ElimCommonPHI::normalizeModule(M);
-  ElimCommonGEP::normalizeModule(M);
+  ElimCommonInstruction::normalizeModule(M);
   CombineGEP::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }

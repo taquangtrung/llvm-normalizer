@@ -20,15 +20,18 @@ using namespace llvm;
 
 namespace discover {
 
-struct ElimCommonPHI : public ModulePass {
+struct ElimCommonInstruction : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
+  GetElementPtrInst* findGEPOfSameElement(GetElementPtrInst *instr);
   PHINode* findPHINodeOfSameIncoming(PHINode *instr);
+  CastInst* findCastInstOfCommonSource(CastInst *instr);
+
   bool processFunction(Function *func);
   void handleFunctions(Module &M);
 
-  ElimCommonPHI() : ModulePass(ID) {}
+  ElimCommonInstruction() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

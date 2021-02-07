@@ -104,7 +104,7 @@ bool CombineGEP::runOnModule(Module &M) {
 
 bool CombineGEP::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
-          << "Eliminating Common GEP...\n";
+          << "Combining GEP...\n";
 
   CombineGEP pass;
   return pass.runOnModule(M);
