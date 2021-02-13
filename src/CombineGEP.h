@@ -24,9 +24,9 @@ struct CombineGEP : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  bool processGEP(IRBuilder<> builder, GetElementPtrInst *instr);
-  bool processFunction(Function *func);
-  void handleFunctions(Module &M);
+  bool processGEP(IRBuilder<>, GetElementPtrInst*);
+  bool processFunction(Function*);
+  void handleFunctions(Module&);
 
   CombineGEP() : ModulePass(ID) {}
 

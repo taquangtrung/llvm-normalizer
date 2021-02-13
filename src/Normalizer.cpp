@@ -77,11 +77,6 @@ Arguments parseArguments(int argc, char** argv) {
   return args;
 }
 
-// void normalizeFunction(Function& F) {
-//   FunctionPass *instCombinePass = createAggressiveInstCombinerPass();
-//   instCombinePass->runOnFunction(F);
-// }
-
 void normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
   InlineSimpleFunction::normalizeModule(M);

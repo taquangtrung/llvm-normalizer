@@ -20,6 +20,7 @@ bool CombineGEP::processGEP(IRBuilder<> builder, GetElementPtrInst *instr) {
       debug() << "\n  next GEP instr:\n" << *gepInstr << "\n";
       if (gepInstr->getPointerOperand() == instr) {
         if (ConstantInt *constantInt = dyn_cast<ConstantInt>(gepInstr->getOperand(1))) {
+
           if ((constantInt->getZExtValue() == 0) &&
               (instr->getNumUses() == 1) &&
               (gepInstr->getNumUses() == 1)) {
@@ -34,7 +35,7 @@ bool CombineGEP::processGEP(IRBuilder<> builder, GetElementPtrInst *instr) {
             Value* ptr = instr->getPointerOperand();
             Instruction* newGepInstr = GetElementPtrInst::CreateInBounds(ptr, newIdxs);
 
-            builder.SetInsertPoint(instr);
+            builder.SetInsertPoint(gepInstr);
             builder.Insert(newGepInstr);
 
             Function* func = instr->getFunction();
