@@ -30,6 +30,7 @@ const std::string LLVM_GLOBAL_CTORS = "llvm.global_ctors";
 
 bool isDiscoverTestingFunc(Function&);
 void replaceOperand(Function *func, Value *oldOpr, Value *newOpr);
+void replacePhiSource(Function *func, BasicBlock *oldOpr, BasicBlock *newOpr);
 
 }
 
