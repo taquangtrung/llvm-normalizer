@@ -20,15 +20,15 @@ using namespace llvm;
 
 namespace discover {
 
-struct CombineBr : public ModulePass {
+struct ElimStoreLoadAlloca : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
 
-  bool processGEP(IRBuilder<>, GetElementPtrInst*);
+  bool processStore(IRBuilder<>, StoreInst*);
   bool processFunction(Function*);
   void handleFunctions(Module&);
 
-  CombineBr() : ModulePass(ID) {}
+  ElimStoreLoadAlloca() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
 };

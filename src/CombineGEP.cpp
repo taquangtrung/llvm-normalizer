@@ -6,7 +6,7 @@ using namespace llvm;
 char CombineGEP::ID = 0;
 
 bool CombineGEP::processGEP(IRBuilder<> builder, GetElementPtrInst *instr) {
-  debug() << "\nprocessing GEP instr:\n" << *instr << "\n";
+  // debug() << "\nprocessing GEP instr:\n" << *instr << "\n";
   if (instr->getNumUses() == 1) {
 
     // TODO: need a better way to find the first user
