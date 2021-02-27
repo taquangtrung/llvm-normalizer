@@ -6,7 +6,10 @@
 project(llvm-normalizer)
 
 cmake_minimum_required(VERSION 3.0.0)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+message(STATUS "Set C++ standard: C++-17")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Determine the OS type
 if(UNIX AND NOT APPLE)
@@ -27,7 +30,7 @@ set(
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
 # Set LLVM version
-set(LLVM_VERSION 8)
+set(LLVM_VERSION 10)
 message (STATUS "Looking for LLVM ${LLVM_VERSION}")
 
 # Set LLVM preferred path
@@ -35,9 +38,14 @@ set(LLVM_CMAKE_PATH_HINTS
   # Linux
   "/usr/lib/llvm/lib/cmake/llvm/"
   "/usr/lib/llvm-8/lib/cmake/llvm/"
+  "/usr/lib/llvm-10/lib/cmake/llvm/"
+  "/usr/lib/llvm-11/lib/cmake/llvm/"
   # MacOS
   "/usr/local/opt/llvm/lib/cmake/llvm/"
-  "/usr/local/opt/llvm@8/lib/cmake/llvm/")
+  "/usr/local/opt/llvm@8/lib/cmake/llvm/"
+  "/usr/local/opt/llvm@10/lib/cmake/llvm/"
+  "/usr/local/opt/llvm@11/lib/cmake/llvm/"
+  )
 
 # config llvm
 find_package(LLVM ${LLVM_VERSION}
