@@ -4,15 +4,22 @@ using namespace discover;
 using namespace llvm;
 
 /*
- * This pass combine the two GEP instructions:
- *     u = GetElementPtr v, idx1, idx2, idx3,
- *     w = GetElementPtr w, 0, idx4, idx5
+ * This pass combines a sequence of GEP instructions that serve to compute
+ * the memory address of only 1 element
  *
- * If u is used only once, then they can be combined into a single instruction:
- *     w = GetElementPtr v, idx1, idx2, idx3, idx4, idx5
+ * For example, given the following GEP instructions
+ *     u = getelementptr v, idx1, idx2
+ *     x = getelementptr u, 0, idx3, idx4
+ *     y = getelementptr x, 0, idx5, idx6
+ *
+ * If u, x are used only once, then the above instructions can be removed,
+ * and can be* replaced by a new instruction:
+ *     y = getelementptr v, idx1, idx2, idx3, idx4, idx5, idx6
  */
 
 char CombineGEP::ID = 0;
+
+using GEPInstList = std::vector<GetElementPtrInst*>;
 
 /*
  * Combine GEP Instructions
@@ -92,23 +99,27 @@ GEPInstList findCombinableGEPs(GetElementPtrInst* instr) {
 /*
  * Find all GEP instructions that can be combinable
  */
-std::vector<GEPInstList> findAllCombinableGEPList(Function &F) {
+std::vector<GEPInstList> findCombinableGEPList(Function &F) {
   std::vector<GEPInstList> candidateGEPList;
   std::set<GetElementPtrInst*> visitedGEPInstrs;
 
   BasicBlockList &BS = F.getBasicBlockList();
+
   for (BasicBlock &B: BS) {
     for (Instruction &I: B) {
       if (!isa<GetElementPtrInst>(&I))
         continue;
 
       GetElementPtrInst* gepInstr = dyn_cast<GetElementPtrInst>(&I);
+
       if (visitedGEPInstrs.find(gepInstr) != visitedGEPInstrs.end()) {
         GEPInstList gepInstList = findCombinableGEPs(gepInstr);
         std::reverse(gepInstList.begin(), gepInstList.end());
+
         for (auto it = gepInstList.begin(); it != gepInstList.end(); it++) {
           visitedGEPInstrs.insert(*it);
         }
+
         candidateGEPList.push_back(gepInstList);
       }
     }
@@ -121,7 +132,7 @@ std::vector<GEPInstList> findAllCombinableGEPList(Function &F) {
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool CombineGEP::runOnFunction(Function &F) {
-  std::vector<GEPInstList> allGEPList = findAllCombinableGEPList(F);
+  std::vector<GEPInstList> allGEPList = findCombinableGEPList(F);
   combineGEPInstructions(F, allGEPList);
   return true;
 }
@@ -131,7 +142,8 @@ bool CombineGEP::runOnFunction(Function &F) {
  */
 bool CombineGEP::normalizeFunction(Function &F) {
   debug() << "\n=========================================\n"
-          << "Combining GEP Instruction in function: " << F.getName() << "\n";
+          << "Combining GEP Instruction in function: "
+          << F.getName() << "\n";
 
   CombineGEP pass;
   return pass.runOnFunction(F);

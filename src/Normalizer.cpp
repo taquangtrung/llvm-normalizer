@@ -20,7 +20,7 @@
 #include "ElimUnusedGlobal.h"
 #include "ElimCommonInstruction.h"
 #include "CombineGEP.h"
-#include "ElimStoreLoadAlloca.h"
+#include "ElimAllocaStoreLoad.h"
 
 using namespace std;
 using namespace llvm;
@@ -82,6 +82,7 @@ Arguments parseArguments(int argc, char** argv) {
 // TODO: restructure this into FunctionPasses and Module Passes
 void normalizeFunction(Function& F) {
   CombineGEP::normalizeFunction(F);
+  ElimAllocaStoreLoad::normalizeFunction(F);
 }
 
 
@@ -93,7 +94,6 @@ void normalizeModule(Module& M) {
   UninlineInstruction::normalizeModule(M);
   ElimCommonInstruction::normalizeModule(M);
   // CombineGEP::normalizeModule(M);
-  ElimStoreLoadAlloca::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 
   // Run each FunctionPass

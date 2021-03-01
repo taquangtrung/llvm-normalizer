@@ -20,17 +20,13 @@ using namespace llvm;
 
 namespace discover {
 
-struct ElimStoreLoadAlloca : public ModulePass {
+struct ElimAllocaStoreLoad : public FunctionPass {
   static char ID;
-  static bool normalizeModule(Module &M);
+  static bool normalizeFunction(Function &F);
 
-  bool processStore(IRBuilder<>, StoreInst*);
-  bool processFunction(Function*);
-  void handleFunctions(Module&);
+  ElimAllocaStoreLoad() : FunctionPass(ID) {}
 
-  ElimStoreLoadAlloca() : ModulePass(ID) {}
-
-  virtual bool runOnModule(Module &M) override;
+  virtual bool runOnFunction(Function &F) override;
 };
 
 } // namespace discover

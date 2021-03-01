@@ -22,8 +22,6 @@ using namespace llvm;
 
 namespace discover {
 
-using GEPInstList = std::vector<GetElementPtrInst*>;
-
 struct CombineGEP : public FunctionPass {
   static char ID;
   static bool normalizeFunction(Function &F);
