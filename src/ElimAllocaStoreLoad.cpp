@@ -89,6 +89,8 @@ std::vector<AllocaStoreLoad> findRemovableAllocaStoreLoad(Function &F) {
       if (allocInst->getNumUses() != 2)
         continue;
 
+      // check the first use is Store, the second use is Load
+
     }
 
 
