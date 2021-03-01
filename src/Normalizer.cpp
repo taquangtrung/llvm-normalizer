@@ -63,8 +63,9 @@ Arguments parseArguments(int argc, char** argv) {
 
   // get output file
   std::string outputFile;
-  if (parsedOptions.count("output"))
+  if (parsedOptions.count("output")) {
     outputFile = parsedOptions["output"].as<std::string>();
+  }
   if (!outputFile.empty()) {
     args.outputFile = outputFile;
     cout << "Output File: " << outputFile << std::endl;
@@ -78,20 +79,33 @@ Arguments parseArguments(int argc, char** argv) {
   return args;
 }
 
+// TODO: restructure this into FunctionPasses and Module Passes
+void normalizeFunction(Function& F) {
+  CombineGEP::normalizeFunction(F);
+}
+
+
+// TODO: restructure this into FunctionPasses and Module Passes
 void normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
   ElimCommonInstruction::normalizeModule(M);
-  CombineGEP::normalizeModule(M);
+  // CombineGEP::normalizeModule(M);
   ElimStoreLoadAlloca::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
+
+  // Run each FunctionPass
+  FunctionList &FS = M.getFunctionList();
+  for (Function &F: FS) {
+    normalizeFunction(F);
+  }
 }
 
 
 int main(int argc, char** argv) {
-  cout << "Discover-Llvm Normalizer" << std::endl;
+  cout << "LLVM Normalizer for Discover" << std::endl;
 
   Arguments args = parseArguments(argc, argv);
   string inputFile = args.inputFile;
@@ -110,11 +124,6 @@ int main(int argc, char** argv) {
     M->print(debug(), nullptr);
   }
 
-  // FunctionList &Funcs = M->getFunctionList();
-  // for (Function &F : Funcs) {
-  //   normalizeFunction(F);
-  // }
-
   normalizeModule(*M);
 
   if (print_output_program) {
@@ -122,14 +131,6 @@ int main(int argc, char** argv) {
             << "AFTER NORMALIZATION:\n";
     M->print(debug(), nullptr);
   }
-
-  // std::string str;
-  // llvm::raw_string_ostream rso(str);
-  // if (verifyModule(M, &rso)) {
-  //   debug() << "After Normalizing\n";
-  //   debug() << "Module is broken: " << rso.str() << "\n";
-  //   debug() << M;
-  // }
 
   // write output
   if (!outputFile.empty()) {

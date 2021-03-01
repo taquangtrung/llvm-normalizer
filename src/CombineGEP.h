@@ -3,8 +3,10 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/PassManager.h"
 
+#include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
@@ -20,17 +22,15 @@ using namespace llvm;
 
 namespace discover {
 
-struct CombineGEP : public ModulePass {
+using GEPInstList = std::vector<GetElementPtrInst*>;
+
+struct CombineGEP : public FunctionPass {
   static char ID;
-  static bool normalizeModule(Module &M);
+  static bool normalizeFunction(Function &F);
 
-  bool processGEP(IRBuilder<>, GetElementPtrInst*);
-  bool processFunction(Function*);
-  void handleFunctions(Module&);
+  CombineGEP() : FunctionPass(ID) {}
 
-  CombineGEP() : ModulePass(ID) {}
-
-  virtual bool runOnModule(Module &M) override;
+  virtual bool runOnFunction(Function &F) override;
 };
 
 } // namespace discover

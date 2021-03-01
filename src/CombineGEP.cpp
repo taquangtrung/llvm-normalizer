@@ -3,118 +3,144 @@
 using namespace discover;
 using namespace llvm;
 
+/*
+ * This pass combine the two GEP instructions:
+ *     u = GetElementPtr v, idx1, idx2, idx3,
+ *     w = GetElementPtr w, 0, idx4, idx5
+ *
+ * If u is used only once, then they can be combined into a single instruction:
+ *     w = GetElementPtr v, idx1, idx2, idx3, idx4, idx5
+ */
+
 char CombineGEP::ID = 0;
 
-bool CombineGEP::processGEP(IRBuilder<> builder, GetElementPtrInst *instr) {
-  // debug() << "\nprocessing GEP instr:\n" << *instr << "\n";
-  if (instr->getNumUses() == 1) {
+/*
+ * Combine GEP Instructions
+ */
+void combineGEPInstructions(Function& F,
+                            std::vector<GEPInstList> combinationGEPList) {
+  for (auto it = combinationGEPList.begin(); it != combinationGEPList.end(); it++) {
+    GEPInstList gepInstList = *it;
 
-    // TODO: need a better way to find the first user
-    User *user;
-    for (User* u : instr->users()) {
-      user = u;
-      break;
+    auto it2 = gepInstList.begin();
+
+    GetElementPtrInst* firstGEP = *it2;
+
+    std::vector<Value*> newIdxs;
+    for (int i = 1; i < firstGEP->getNumOperands(); i++)
+      newIdxs.push_back(firstGEP->getOperand(i));
+
+    it2++;
+    GetElementPtrInst* otherGEP;
+    for (; it2 != gepInstList.end(); it2++) {
+      otherGEP = *it2;
+      for (int i = 2; i < otherGEP->getNumOperands(); i++)
+        newIdxs.push_back(otherGEP->getOperand(i));
     }
 
-    if (GetElementPtrInst* gepInstr = dyn_cast<GetElementPtrInst>(user)) {
-      debug() << "\n  next GEP instr:\n" << *gepInstr << "\n";
-      if (gepInstr->getPointerOperand() == instr) {
-        if (ConstantInt *constantInt = dyn_cast<ConstantInt>(gepInstr->getOperand(1))) {
+    Value* rootPtr = firstGEP->getPointerOperand();
+    Instruction* newGepInstr = GetElementPtrInst::CreateInBounds(rootPtr, newIdxs);
 
-          if ((constantInt->getZExtValue() == 0) &&
-              (instr->getNumUses() == 1) &&
-              (gepInstr->getNumUses() == 1)) {
-            std::vector<Value*> newIdxs;
+    IRBuilder<> builder = IRBuilder(firstGEP);
+    builder.SetInsertPoint(otherGEP);
+    builder.Insert(newGepInstr);
+    llvm::replaceOperand(&F, otherGEP, newGepInstr);
 
-            for (int i = 1; i < instr->getNumOperands(); i++)
-              newIdxs.push_back(instr->getOperand(i));
+    for (it2 = gepInstList.begin(); it2 != gepInstList.end(); it2++) {
+      GetElementPtrInst* instr = *it2;
+      instr->removeFromParent();
+    }
 
-            for (int i = 2; i < gepInstr->getNumOperands(); i++)
-              newIdxs.push_back(gepInstr->getOperand(i));
+  }
 
-            Value* ptr = instr->getPointerOperand();
-            Instruction* newGepInstr = GetElementPtrInst::CreateInBounds(ptr, newIdxs);
+}
 
-            builder.SetInsertPoint(gepInstr);
-            builder.Insert(newGepInstr);
+/*
+ * Find GEP Instructions combinable with another instruction
+ */
+GEPInstList findCombinableGEPs(GetElementPtrInst* instr) {
+  // stop finding if the current instr has more than 1 uses
+  if (instr->getNumUses() != 1)
+    return GEPInstList();
 
-            Function* func = instr->getFunction();
-            llvm::replaceOperand(func, gepInstr, newGepInstr);
+  // Get first user of the gepInstr
+  User *user;
+  for (User* u : instr->users()) {
+    user = u;
+    break;
+  }
 
-            instr->removeFromParent();
-            gepInstr->removeFromParent();
+  // ignore if the current GEP is not used by another GEP
+  if (!isa<GetElementPtrInst>(user))
+    return GEPInstList();
 
-            return true;
-          }
+  GetElementPtrInst* nextInstr = dyn_cast<GetElementPtrInst>(user);
+  Value* firstIdx = instr->getOperand(1);
+
+  if (ConstantInt *intIdx = dyn_cast<ConstantInt>(firstIdx)) {
+    if (intIdx->getZExtValue() == 0) {
+      // Find further combinable GEPInstr
+      GEPInstList foundGEPs = findCombinableGEPs(nextInstr);
+      foundGEPs.push_back(instr);
+      return foundGEPs;
+    }
+  }
+
+  return GEPInstList();
+}
+
+/*
+ * Find all GEP instructions that can be combinable
+ */
+std::vector<GEPInstList> findAllCombinableGEPList(Function &F) {
+  std::vector<GEPInstList> candidateGEPList;
+  std::set<GetElementPtrInst*> visitedGEPInstrs;
+
+  BasicBlockList &BS = F.getBasicBlockList();
+  for (BasicBlock &B: BS) {
+    for (Instruction &I: B) {
+      if (!isa<GetElementPtrInst>(&I))
+        continue;
+
+      GetElementPtrInst* gepInstr = dyn_cast<GetElementPtrInst>(&I);
+      if (visitedGEPInstrs.find(gepInstr) != visitedGEPInstrs.end()) {
+        GEPInstList gepInstList = findCombinableGEPs(gepInstr);
+        std::reverse(gepInstList.begin(), gepInstList.end());
+        for (auto it = gepInstList.begin(); it != gepInstList.end(); it++) {
+          visitedGEPInstrs.insert(*it);
         }
+        candidateGEPList.push_back(gepInstList);
       }
     }
   }
 
-  return false;
+  return candidateGEPList;
 }
 
-bool CombineGEP::processFunction(Function *func) {
-  debug() << "\n** Processing function: " << func->getName() << "\n";
-  BasicBlockList &blockList = func->getBasicBlockList();
-  bool stop = true;
-  bool funcUpdated = false;
-
-  for (auto it = blockList.begin(); it != blockList.end(); ++it) {
-    BasicBlock *blk = &(*it);
-    IRBuilder<> builder(blk);
-
-    bool blockUpdated = true;
-
-    while (blockUpdated) {
-      blockUpdated = false;
-
-      for (auto it2 = blk->begin(); it2 != blk->end(); ++it2) {
-        Instruction *instr = &(*it2);
-
-        if (GetElementPtrInst* gepInstr = dyn_cast<GetElementPtrInst>(instr)) {
-          if (processGEP(builder, gepInstr)) {
-            blockUpdated = true;
-            funcUpdated = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  return funcUpdated;
-}
-
-void CombineGEP::handleFunctions(Module &M) {
-  FunctionList &funcList = M.getFunctionList();
-
-  for (auto it = funcList.begin(); it != funcList.end(); ++it) {
-    Function *func = &(*it);
-    bool continueProcess = true;
-    while (continueProcess) {
-      continueProcess = processFunction(func);
-    }
-  }
-}
-
-bool CombineGEP::runOnModule(Module &M) {
-  handleFunctions(M);
+/*
+ * Entry function for this FunctionPass, can be used by llvm-opt
+ */
+bool CombineGEP::runOnFunction(Function &F) {
+  std::vector<GEPInstList> allGEPList = findAllCombinableGEPList(F);
+  combineGEPInstructions(F, allGEPList);
   return true;
 }
 
-bool CombineGEP::normalizeModule(Module &M) {
+/*
+ * Static function, used by this normalizer
+ */
+bool CombineGEP::normalizeFunction(Function &F) {
   debug() << "\n=========================================\n"
-          << "Combining GEP...\n";
+          << "Combining GEP Instruction in function: " << F.getName() << "\n";
 
   CombineGEP pass;
-  return pass.runOnModule(M);
+  return pass.runOnFunction(F);
 }
 
 static RegisterPass<CombineGEP> X("CombineGEP",
-                                     "CombineGEP",
-                                     false /* Only looks at CFG */,
-                                     false /* Analysis Pass */);
+                                  "CombineGEP Pass",
+                                  false /* Only looks at CFG */,
+                                  false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
