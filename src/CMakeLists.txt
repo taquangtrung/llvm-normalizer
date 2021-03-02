@@ -5,7 +5,7 @@ set(SOURCE_FILES
   InlineSimpleFunction.cpp
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp
-  ElimCommonInstruction.cpp
+  ElimIdenticalInstrs.cpp
   ElimAllocaStoreLoad.cpp
   CombineGEP.cpp
   InitGlobal.cpp

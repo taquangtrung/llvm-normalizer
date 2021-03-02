@@ -1,11 +1,12 @@
-#include "ElimCommonInstruction.h"
+#include "ElimIdenticalInstrs.h"
 
 using namespace discover;
 using namespace llvm;
 
-char ElimCommonInstruction::ID = 0;
+char ElimIdenticalInstrs::ID = 0;
+using InstructionList = std::vector<Instruction*>;
 
-GetElementPtrInst* ElimCommonInstruction::findGEPOfSameElement(GetElementPtrInst *instr) {
+GetElementPtrInst* findGEPOfSameElement(GetElementPtrInst *instr) {
   BasicBlock *blk = instr->getParent();
 
   int numOperands = instr->getNumOperands();
@@ -39,7 +40,7 @@ GetElementPtrInst* ElimCommonInstruction::findGEPOfSameElement(GetElementPtrInst
   return NULL;
 }
 
-PHINode* ElimCommonInstruction::findPHINodeOfSameIncoming(PHINode *instr) {
+PHINode* findPHINodeOfSameIncoming(PHINode *instr) {
   BasicBlock *blk = instr->getParent();
 
   int numIncoming = instr->getNumIncomingValues();
@@ -68,9 +69,7 @@ PHINode* ElimCommonInstruction::findPHINodeOfSameIncoming(PHINode *instr) {
 }
 
 
-CastInst* ElimCommonInstruction::findCastInstOfCommonSource(CastInst *instr) {
-  BasicBlock *blk = instr->getParent();
-
+InstructionList findCastInstOfSameSource(CastInst *instr) {
   int numOperands = instr->getNumOperands();
 
   // debug() << "Find GEP of same element for:\n" << *instr << "\n";
@@ -90,7 +89,11 @@ CastInst* ElimCommonInstruction::findCastInstOfCommonSource(CastInst *instr) {
   return NULL;
 }
 
-bool ElimCommonInstruction::processFunction(Function *func) {
+std::vector<InstructionList> findInstr() {
+
+}
+
+bool ElimIdenticalInstrs::runOnFunction(Function *func) {
   BasicBlockList &blockList = func->getBasicBlockList();
   bool stop = true;
   bool funcUpdated = false;
@@ -114,7 +117,7 @@ bool ElimCommonInstruction::processFunction(Function *func) {
         else if (PHINode* phiInstr = dyn_cast<PHINode>(instr))
           otherInstr = findPHINodeOfSameIncoming(phiInstr);
         else if (CastInst* castInstr = dyn_cast<CastInst>(instr))
-          otherInstr = findCastInstOfCommonSource(castInstr);
+          otherInstr = findCastInstOfSameSource(castInstr);
 
         if (otherInstr != NULL) {
           debug() << "Substitute:\n  " << *otherInstr << "\n"
@@ -132,38 +135,35 @@ bool ElimCommonInstruction::processFunction(Function *func) {
   return funcUpdated;
 }
 
-void ElimCommonInstruction::handleFunctions(Module &M) {
-  FunctionList &funcList = M.getFunctionList();
-
-  for (auto it = funcList.begin(); it != funcList.end(); ++it) {
-    Function *func = &(*it);
-    bool continueProcess = true;
-    while (continueProcess) {
-      continueProcess = processFunction(func);
-    }
-  }
-}
-
-bool ElimCommonInstruction::runOnModule(Module &M) {
-  handleFunctions(M);
+/*
+ * Entry function for this FunctionPass, can be used by llvm-opt
+ */
+bool ElimIdenticalInstrs::runOnFunction(Function &F) {
+  std::vector<GEPInstList> allGEPList = findCombinableGEPList(F);
+  combineGEPInstructions(F, allGEPList);
   return true;
 }
 
-bool ElimCommonInstruction::normalizeModule(Module &M) {
-  debug() << "\n=========================================\n"
-          << "Eliminating Common Instruction...\n";
 
-  ElimCommonInstruction pass;
-  return pass.runOnModule(M);
+/*
+ * Static function, used by this normalizer
+ */
+bool CombineGEP::normalizeFunction(Function &F) {
+  debug() << "\n=========================================\n"
+          << "Eliminate Common Instruction in function: "
+          << F.getName() << "\n";
+
+  ElimIdenticalInstrs pass;
+  return pass.runOnFunction(F);
 }
 
-static RegisterPass<ElimCommonInstruction> X("ElimCommonInstruction",
-                                     "ElimCommonInstruction",
+static RegisterPass<ElimIdenticalInstrs> X("ElimIdenticalInstrs",
+                                     "ElimIdenticalInstrs",
                                      false /* Only looks at CFG */,
                                      false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
                                    legacy::PassManagerBase &PM) {
-                                  PM.add(new ElimCommonInstruction());
+                                  PM.add(new ElimIdenticalInstrs());
                                 });

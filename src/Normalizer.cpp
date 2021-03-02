@@ -18,7 +18,7 @@
 #include "InlineSimpleFunction.h"
 #include "ElimUnusedAuxFunction.h"
 #include "ElimUnusedGlobal.h"
-#include "ElimCommonInstruction.h"
+#include "ElimIdenticalInstrs.h"
 #include "CombineGEP.h"
 #include "ElimAllocaStoreLoad.h"
 
@@ -92,7 +92,7 @@ void normalizeModule(Module& M) {
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
-  ElimCommonInstruction::normalizeModule(M);
+  ElimIdenticalInstrs::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }
 
