@@ -19,63 +19,36 @@ using namespace llvm;
 
 char ElimAllocaStoreLoad::ID = 0;
 
-using AllocaStoreLoad = std::tuple<AllocaInst*, StoreInst*, LoadInst*>;
+using AllocaStoreLoads = std::tuple<AllocaInst*, StoreInst*, std::vector<LoadInst*>>;
 
-bool processStore(IRBuilder<> builder, StoreInst *instr) {
-  Value* storeDst = instr->getOperand(1);
+void removeAllocaStoreLoad(Function &F,
+                           std::vector<AllocaStoreLoads> allocaStoreLoadList) {
+  for (auto it = allocaStoreLoadList.begin(); it != allocaStoreLoadList.end(); it++) {
+    AllocaStoreLoads instrTuple = *it;
 
-  if (AllocaInst* allocaInstr = dyn_cast<AllocaInst>(storeDst)) {
+    AllocaInst* allocInst = std::get<0>(instrTuple);
+    StoreInst* storeInst = std::get<1>(instrTuple);
+    std::vector<LoadInst*> loadInsts = std::get<2>(instrTuple);
 
-    int numStoreUsingAlloca = 0;
-    for (User* u : allocaInstr->users()) {
-      User* user = u;
-      if (isa<StoreInst>(user)) {
-        numStoreUsingAlloca++;
-      }
+    // debug() << "- Elim AllocaInst: " << *allocInst << "\n";
+
+    Value* storeSrc = storeInst->getOperand(0);
+
+    for (auto it = loadInsts.begin(); it != loadInsts.end(); it++) {
+      LoadInst* loadInst = *it;
+      // debug() << "   replace: " << *loadInst << "\n"
+      //         << "      by: " << *storeSrc << "\n";
+      llvm::replaceOperand(&F, loadInst, storeSrc);
+      loadInst->removeFromParent();
     }
 
-    if (numStoreUsingAlloca != 1)
-      return false;
-
-    bool isAllocaUsedOnlyInStoreLoad = true;
-    for (User* u : allocaInstr->users()) {
-      User* user = u;
-      if (!isa<LoadInst>(user) && !isa<StoreInst>(user)) {
-        isAllocaUsedOnlyInStoreLoad = false;
-        break;
-      }
-    }
-
-    if (!isAllocaUsedOnlyInStoreLoad)
-      return false;
-
-    Value* storeSrc = instr->getOperand(0);
-    Function* func = instr->getFunction();
-
-    debug() << "Processing Store Instr:\n" << *instr << "\n";
-
-    for (User* u : allocaInstr->users()) {
-      User* user = u;
-      if (LoadInst* loadInstr = dyn_cast<LoadInst>(user)) {
-        debug() << "\n   replace: " << *loadInstr << " -- by: " << *storeSrc << "\n";
-        llvm::replaceOperand(func, loadInstr, storeSrc);
-        loadInstr->removeFromParent();
-      }
-    }
-
-
-    instr->removeFromParent();
-    allocaInstr->removeFromParent();
-
-    return true;
+    storeInst->removeFromParent();
+    allocInst->removeFromParent();
   }
-
-  return false;
 }
 
-std::vector<AllocaStoreLoad> findRemovableAllocaStoreLoad(Function &F) {
-  debug() << "\n** Processing function: " << F.getName() << "\n";
-  std::vector<AllocaStoreLoad> candidateAllocaStoreLoadList;
+std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
+  std::vector<AllocaStoreLoads> candidateAllocaStoreLoadList;
 
   BasicBlockList &BS = F.getBasicBlockList();
 
@@ -85,47 +58,55 @@ std::vector<AllocaStoreLoad> findRemovableAllocaStoreLoad(Function &F) {
         continue;
 
       AllocaInst *allocInst = dyn_cast<AllocaInst>(&I);
+      // debug() << "AllocaInst: " << *allocInst << "\n";
 
-      if (allocInst->getNumUses() != 2)
-        continue;
+      StoreInst *storeInst;
+      std::vector<LoadInst*> loadInsts;
 
-      // check the first use is Store, the second use is Load
+      bool hasOnlyStoreLoadInst = true;
+      int numStoreInst = 0;
+      int numLoadInst = 0;
 
+      for (auto it = allocInst->user_begin(); it != allocInst->user_end(); it++) {
+        Value *instUser = *it;
+        // debug() << "  user: " << *it->getUser() << "\n";
+
+        if (isa<StoreInst>(instUser)) {
+          storeInst = dyn_cast<StoreInst>(instUser);
+          // debug() << "  StoreInst: " << *storeInst << "\n";
+          numStoreInst++;
+        }
+        else if (isa<LoadInst>(instUser)) {
+          LoadInst *loadInst = dyn_cast<LoadInst>(instUser);
+          // debug() << "  LoadInst: " << *loadInst << "\n";
+          loadInsts.push_back(loadInst);
+          numLoadInst++;
+        }
+        else {
+          hasOnlyStoreLoadInst = false;
+          break;
+        }
+      }
+
+      if (hasOnlyStoreLoadInst && numStoreInst == 1 && numLoadInst > 0) {
+        AllocaStoreLoads candidate = std::make_tuple(allocInst, storeInst, loadInsts);
+        candidateAllocaStoreLoadList.push_back(candidate);
+      }
     }
-
-
-    // BasicBlock *blk = &(*it);
-    // IRBuilder<> builder(blk);
-
-    // bool blockUpdated = true;
-
-    // while (blockUpdated) {
-    //   blockUpdated = false;
-
-    //   for (auto it2 = blk->begin(); it2 != blk->end(); ++it2) {
-    //     Instruction *instr = &(*it2);
-
-    //     if (StoreInst* storeInstr = dyn_cast<StoreInst>(instr)) {
-    //       if (processStore(builder, storeInstr)) {
-    //         blockUpdated = true;
-    //         funcUpdated = true;
-    //         break;
-    //       }
-    //     }
-    //   }
-    // }
   }
 
   return candidateAllocaStoreLoadList;
 }
 
 bool ElimAllocaStoreLoad::runOnFunction(Function &F) {
+  std::vector<AllocaStoreLoads> instrTupleList = findRemovableAllocaStoreLoad(F);
+  removeAllocaStoreLoad(F, instrTupleList);
   return true;
 }
 
 bool ElimAllocaStoreLoad::normalizeFunction(Function &F) {
   debug() << "\n=========================================\n"
-          << "Eliminate Store-Load of Alloca in function: "
+          << "Eliminate AllocaStoreLoads in function: "
           << F.getName() << "\n";
 
   ElimAllocaStoreLoad pass;

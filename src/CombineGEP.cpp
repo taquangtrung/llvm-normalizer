@@ -71,17 +71,14 @@ GEPInstList findCombinableGEPs(GetElementPtrInst* instr) {
     return GEPInstList();
 
   // Get first user of the gepInstr
-  User *user;
-  for (User* u : instr->users()) {
-    user = u;
-    break;
-  }
+  auto it = instr->users().begin();
+  User *firstUser = *it;
 
   // ignore if the current GEP is not used by another GEP
-  if (!isa<GetElementPtrInst>(user))
+  if (!isa<GetElementPtrInst>(firstUser))
     return GEPInstList();
 
-  GetElementPtrInst* nextInstr = dyn_cast<GetElementPtrInst>(user);
+  GetElementPtrInst* nextInstr = dyn_cast<GetElementPtrInst>(firstUser);
   Value* firstIdx = instr->getOperand(1);
 
   if (ConstantInt *intIdx = dyn_cast<ConstantInt>(firstIdx)) {

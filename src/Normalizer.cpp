@@ -93,14 +93,7 @@ void normalizeModule(Module& M) {
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
   ElimCommonInstruction::normalizeModule(M);
-  // CombineGEP::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
-
-  // Run each FunctionPass
-  FunctionList &FS = M.getFunctionList();
-  for (Function &F: FS) {
-    normalizeFunction(F);
-  }
 }
 
 
@@ -124,6 +117,13 @@ int main(int argc, char** argv) {
     M->print(debug(), nullptr);
   }
 
+  // Run each FunctionPass
+  FunctionList &FS = M->getFunctionList();
+  for (Function &F: FS) {
+    normalizeFunction(F);
+  }
+
+  // Run ModulePass
   normalizeModule(*M);
 
   if (print_output_program) {
