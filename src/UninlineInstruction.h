@@ -20,15 +20,13 @@ using namespace llvm;
 
 namespace discover {
 
-struct UninlineInstruction : public ModulePass {
+struct UninlineInstruction : public FunctionPass {
   static char ID;
-  static bool normalizeModule(Module &M);
+  static bool normalizeFunction(Function &F);
 
-  void uninlineConstExpr(IRBuilder<> builder, Instruction* instr);
+  UninlineInstruction() : FunctionPass(ID) {}
 
-  UninlineInstruction() : ModulePass(ID) {}
-
-  virtual bool runOnModule(Module &M) override;
+  virtual bool runOnFunction(Function &F) override;
 };
 
 } // namespace discover

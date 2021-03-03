@@ -3,12 +3,17 @@
 using namespace discover;
 using namespace llvm;
 
+/*
+ * This pass uninline ConstantExprs, which are operands of an instruction
+ * into separate instructions.
+ */
+
 char UninlineInstruction::ID = 0;
 
-/**
- * un-inline ConstExpr in instructions, recursively
+/*
+ * Un-inline ConstExpr in instructions, recursively
  */
-void UninlineInstruction::uninlineConstExpr(IRBuilder<> builder, Instruction* instr) {
+void uninlineConstExpr(IRBuilder<> builder, Instruction *instr) {
 
   // transform ConstantExpr in operands into new instructions
   for (int i = 0; i < instr->getNumOperands(); i++) {
@@ -33,7 +38,6 @@ void UninlineInstruction::uninlineConstExpr(IRBuilder<> builder, Instruction* in
         builder.SetInsertPoint(instr);
       }
 
-
       builder.Insert(exprInstr);
       instr->setOperand(i, exprInstr);
 
@@ -42,41 +46,37 @@ void UninlineInstruction::uninlineConstExpr(IRBuilder<> builder, Instruction* in
   }
 }
 
-bool UninlineInstruction::runOnModule(Module &M) {
-  FunctionList &funcList = M.getFunctionList();
+/*
+ * Entry function for this FunctionPass, can be used by llvm-opt
+ */
+bool UninlineInstruction::runOnFunction(Function &F) {
+  for (BasicBlock &B: F.getBasicBlockList()){
+    IRBuilder<> builder(&B);
 
-  for (auto it = funcList.begin(); it != funcList.end(); ++it) {
-    auto func = it;
-
-    BasicBlockList &blockList = func->getBasicBlockList();
-
-    for (auto it2 = blockList.begin(); it2 != blockList.end(); ++it2) {
-      BasicBlock *blk = &(*it2);
-      IRBuilder<> builder(blk);
-
-      for (auto it3 = blk->begin(); it3 != blk->end(); ++it3) {
-        Instruction *instr = &(*it3);
-
-        uninlineConstExpr(builder, instr);
-      }
+    for (Instruction &I: B){
+      uninlineConstExpr(builder, &I);
     }
   }
 
   return true;
 }
 
-bool UninlineInstruction::normalizeModule(Module &M) {
+/*
+ * Static function, used by this normalizer
+ */
+bool UninlineInstruction::normalizeFunction(Function &F) {
   debug() << "\n=========================================\n"
-          << "Uninlining Instructions ...\n";
+          << "Uninlining Instructions in function: "
+          << F.getName() << "\n";
 
   UninlineInstruction pass;
-  return pass.runOnModule(M);
+  return pass.runOnFunction(F);
 }
 
 static RegisterPass<UninlineInstruction> X("UninlineInstruction",
-                                          "Normalize ConstantExpr",
-                                          false /* Only looks at CFG */,
-                                          false /* Analysis Pass */);
+                                           "Normalize ConstantExpr",
+                                           false /* Only looks at CFG */,
+                                           false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,

@@ -79,20 +79,18 @@ Arguments parseArguments(int argc, char** argv) {
   return args;
 }
 
-// TODO: restructure this into FunctionPasses and Module Passes
 void normalizeFunction(Function& F) {
+  UninlineInstruction::normalizeFunction(F);
   CombineGEP::normalizeFunction(F);
   ElimIdenticalInstrs::normalizeFunction(F);
   ElimAllocaStoreLoad::normalizeFunction(F);
 }
 
 
-// TODO: restructure this into FunctionPasses and Module Passes
 void normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
-  UninlineInstruction::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }
 
@@ -105,7 +103,6 @@ int main(int argc, char** argv) {
   string outputFile = args.outputFile;
 
   // process bitcode
-  // unique_ptr<Module> M;
   SMDiagnostic err;
   static LLVMContext context;
 
