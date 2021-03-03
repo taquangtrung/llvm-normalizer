@@ -3,144 +3,209 @@
 using namespace discover;
 using namespace llvm;
 
+using InstList = std::vector<Instruction*>;
+using InstSet = std::set<Instruction*>;
+using IdentInsts = std::pair<Instruction*, std::vector<Instruction*>>;
+using IdentInstsList = std::vector<IdentInsts>;
+
+/*
+ * This pass eliminates identical instructions. For example,
+ *
+ * Given the following GEP instructions
+ *     u = getelementptr v, idx1, idx2
+ *     w = getelementptr v, idx1, idx2
+ *  ==> replace `w` by `u` and remove the second instruction
+ *
+ * Given the following PHI instructions
+ *     u = phi [v1, b1], [v2, b2]
+ *     w = phi [v1, b1], [v2, b2]
+ *  ==> replace `w` by `u` and remove the second instruction
+ *
+ * Given the following BitCast instructions
+ *     u = bitcast v to t
+ *     w = bitcast v to t
+ *  ==> replace `w` by `u` and remove the second instruction
+ */
+
 char ElimIdenticalInstrs::ID = 0;
-using InstructionList = std::vector<Instruction*>;
 
-GetElementPtrInst* findGEPOfSameElement(GetElementPtrInst *instr) {
-  BasicBlock *blk = instr->getParent();
 
-  int numOperands = instr->getNumOperands();
+/*
+ * Find GetElementPtrInst of the same element pointer
+ */
+IdentInstsList findGEPOfSameElemPtr(Function &F) {
+  InstSet visitedInsts;
+  IdentInstsList identInstsList;
 
-  // debug() << "Find GEP of same element for:\n" << *instr << "\n";
-
-  for (auto it = blk->begin(); it != blk->end(); ++it) {
-    if (GetElementPtrInst* otherInstr = dyn_cast<GetElementPtrInst>(&(*it))) {
-      if (otherInstr == instr)
+  for (BasicBlock &B: F.getBasicBlockList()) {
+    for (Instruction &I: B) {
+      if (!isa<GetElementPtrInst>(I))
         continue;
 
-      if (numOperands != otherInstr->getNumOperands())
+      if (visitedInsts.find(&I) != visitedInsts.end())
         continue;
 
-      bool hasSameOperands = true;
+      GetElementPtrInst *gepInst = dyn_cast<GetElementPtrInst>(&I);
 
-      // debug() << " - other instr:\n" << *otherInstr << "\n";
+      Value *gepSrc = gepInst->getOperand(0);
+      int numIdxs = gepInst->getNumIndices();
 
-      for (int i = 0; i < numOperands; i++)
-        if (instr->getOperand(i) != otherInstr->getOperand(i)) {
-          // debug() << "     + different operand: " << *(instr->getOperand(i))
-          //         << ", " << *(otherInstr->getOperand(i)) << "\n";
-          hasSameOperands = false;
-        }
+      InstList otherIdentInsts;
 
-      if (hasSameOperands)
-        return otherInstr;
-    }
-  }
+      for (User *user: gepSrc->users()) {
+        if (!isa<GetElementPtrInst>(user))
+          continue;
 
-  return NULL;
-}
+        GetElementPtrInst *otherGep = dyn_cast<GetElementPtrInst>(user);
+        if ((otherGep->getOperand(0) != gepSrc) ||
+            (otherGep->getNumIndices() != numIdxs))
+          continue;
 
-PHINode* findPHINodeOfSameIncoming(PHINode *instr) {
-  BasicBlock *blk = instr->getParent();
+        bool hasSameIdxs = true;
+        for (int i = 0; i < numIdxs; i++)
+          if (otherGep->getOperand(i+1) != gepInst->getOperand(i+1)) {
+            hasSameIdxs = false;
+            break;
+          }
 
-  int numIncoming = instr->getNumIncomingValues();
-
-  for (auto it = blk->begin(); it != blk->end(); ++it) {
-    if (PHINode* otherInstr = dyn_cast<PHINode>(&(*it))) {
-      if (otherInstr == instr)
-        continue;
-
-      if (otherInstr->getNumIncomingValues() != numIncoming)
-        continue;
-
-      bool hasSameIncomings = true;
-
-      for (int i = 0; i < numIncoming; i++)
-        if (otherInstr->getIncomingValue(i) != instr->getIncomingValue(i)) {
-          hasSameIncomings = false;
-        }
-
-      if (hasSameIncomings)
-        return otherInstr;
-    }
-  }
-
-  return NULL;
-}
-
-
-InstructionList findCastInstOfSameSource(CastInst *instr) {
-  int numOperands = instr->getNumOperands();
-
-  // debug() << "Find GEP of same element for:\n" << *instr << "\n";
-
-  for (auto it = blk->begin(); it != blk->end(); ++it) {
-    if (CastInst* otherInstr = dyn_cast<CastInst>(&(*it))) {
-      if (otherInstr == instr)
-        continue;
-
-      if ((numOperands == otherInstr->getNumOperands()) &&
-          (instr->getOperand(0) == otherInstr->getOperand(0)) &&
-          (instr->getDestTy() == otherInstr->getDestTy()))
-        return otherInstr;
-    }
-  }
-
-  return NULL;
-}
-
-std::vector<InstructionList> findInstr() {
-
-}
-
-bool ElimIdenticalInstrs::runOnFunction(Function *func) {
-  BasicBlockList &blockList = func->getBasicBlockList();
-  bool stop = true;
-  bool funcUpdated = false;
-
-  for (auto it = blockList.begin(); it != blockList.end(); ++it) {
-    BasicBlock *blk = &(*it);
-    IRBuilder<> builder(blk);
-
-    bool blockUpdated = true;
-
-    while (blockUpdated) {
-      blockUpdated = false;
-
-      for (auto it2 = blk->begin(); it2 != blk->end(); ++it2) {
-        Instruction *instr = &(*it2);
-
-        Instruction* otherInstr = NULL;
-
-        if (GetElementPtrInst* gepInstr = dyn_cast<GetElementPtrInst>(instr))
-          otherInstr = findGEPOfSameElement(gepInstr);
-        else if (PHINode* phiInstr = dyn_cast<PHINode>(instr))
-          otherInstr = findPHINodeOfSameIncoming(phiInstr);
-        else if (CastInst* castInstr = dyn_cast<CastInst>(instr))
-          otherInstr = findCastInstOfSameSource(castInstr);
-
-        if (otherInstr != NULL) {
-          debug() << "Substitute:\n  " << *otherInstr << "\n"
-                  << "  by:\n  " << *instr << "\n";
-          llvm::replaceOperand(func, otherInstr, instr);
-          otherInstr->eraseFromParent();
-          blockUpdated = true;
-          funcUpdated = true;
-          break;
+        if (hasSameIdxs) {
+          otherIdentInsts.push_back(otherGep);
+          visitedInsts.insert(otherGep);
         }
       }
+
+      IdentInsts identInsts = std::make_pair(gepInst, otherIdentInsts);
+      identInstsList.push_back(identInsts);
     }
   }
 
-  return funcUpdated;
+  return identInstsList;
+}
+
+/*
+ * Find PHINode of the same incoming values
+ */
+IdentInstsList findPHINodeOfSameIncoming(Function &F) {
+  InstSet visitedInsts;
+  IdentInstsList identInstsList;
+
+  for (BasicBlock &B: F.getBasicBlockList()) {
+    for (Instruction &I: B) {
+      if (!isa<PHINode>(I))
+        continue;
+
+      if (visitedInsts.find(&I) != visitedInsts.end())
+        continue;
+
+      PHINode *phiNode = dyn_cast<PHINode>(&I);
+
+      int numIncoming = phiNode->getNumIncomingValues();
+      Value* firstIncoming = phiNode->getIncomingValue(0);
+
+      InstList otherIdentInsts;
+      for (User *user: firstIncoming->users()) {
+        if (!isa<PHINode>(user))
+          continue;
+
+        PHINode *otherPhi = dyn_cast<PHINode>(user);
+        if (otherPhi->getNumIncomingValues() != numIncoming)
+          continue;
+
+        bool hasSameIncomings = true;
+        for (int i = 0; i < numIncoming; i++)
+          if (phiNode->getIncomingValue(i) != otherPhi->getIncomingValue(i) ||
+              phiNode->getIncomingBlock(i) != otherPhi->getIncomingBlock(i)) {
+            hasSameIncomings = false;
+            break;
+          }
+
+        if (hasSameIncomings) {
+          otherIdentInsts.push_back(otherPhi);
+          visitedInsts.insert(otherPhi);
+        }
+      }
+
+      IdentInsts identInsts = std::make_pair(phiNode, otherIdentInsts);
+      identInstsList.push_back(identInsts);
+    }
+  }
+
+  return identInstsList;
+}
+
+
+/*
+ * Find CastInst of the same source and destination type
+ */
+IdentInstsList findCastInstsOfSameSourceAndType(Function &F) {
+  InstSet visitedInsts;
+  IdentInstsList identInstsList;
+
+  for (BasicBlock &B: F.getBasicBlockList()) {
+    for (Instruction &I: B) {
+      if (!isa<CastInst>(I))
+        continue;
+
+      if (visitedInsts.find(&I) != visitedInsts.end())
+        continue;
+
+      CastInst *castInst = dyn_cast<CastInst>(&I);
+      Value *castSrc = castInst->getOperand(0);
+
+      InstList otherIdentInsts;
+      for (User *user: castSrc->users()) {
+        if (!isa<CastInst>(user))
+          continue;
+
+        CastInst *otherCastInst = dyn_cast<CastInst>(user);
+
+        if (castInst->getDestTy() == otherCastInst->getDestTy()) {
+          otherIdentInsts.push_back(otherCastInst);
+          visitedInsts.insert(otherCastInst);
+        }
+      }
+
+      IdentInsts identInsts = std::make_pair(castInst, otherIdentInsts);
+      identInstsList.push_back(identInsts);
+    }
+  }
+
+  return identInstsList;
+}
+
+/*
+ * Eliminate identical instructions
+ */
+void eliminateIdenticalInstrs(Function &F, IdentInstsList identInstsList) {
+  for (auto it = identInstsList.begin(); it != identInstsList.end(); it++) {
+    IdentInsts identInsts = *it;
+    Instruction *keepInst = identInsts.first;
+    InstList otherInsts = identInsts.second;
+
+    for (auto it2 = otherInsts.begin(); it2 != otherInsts.end(); it2++) {
+      Instruction *otherInst = *it2;
+      llvm::replaceOperand(&F, otherInst, keepInst);
+      otherInst->removeFromParent();
+    }
+  }
 }
 
 /*
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
-  std::vector<GEPInstList> allGEPList = findCombinableGEPList(F);
-  combineGEPInstructions(F, allGEPList);
+  // find and eliminate identical CastInst
+  IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
+  eliminateIdenticalInstrs(F, identCastList);
+
+  // find and eliminate identical PHINode
+  IdentInstsList identPHIList = findPHINodeOfSameIncoming(F);
+  eliminateIdenticalInstrs(F, identPHIList);
+
+  // find and eliminate identical GetElementPtrInst
+  IdentInstsList identGEPList = findGEPOfSameElemPtr(F);
+  eliminateIdenticalInstrs(F, identGEPList);
+
   return true;
 }
 
@@ -148,7 +213,7 @@ bool ElimIdenticalInstrs::runOnFunction(Function &F) {
 /*
  * Static function, used by this normalizer
  */
-bool CombineGEP::normalizeFunction(Function &F) {
+bool ElimIdenticalInstrs::normalizeFunction(Function &F) {
   debug() << "\n=========================================\n"
           << "Eliminate Common Instruction in function: "
           << F.getName() << "\n";

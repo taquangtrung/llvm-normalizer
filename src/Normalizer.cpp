@@ -82,6 +82,7 @@ Arguments parseArguments(int argc, char** argv) {
 // TODO: restructure this into FunctionPasses and Module Passes
 void normalizeFunction(Function& F) {
   CombineGEP::normalizeFunction(F);
+  ElimIdenticalInstrs::normalizeFunction(F);
   ElimAllocaStoreLoad::normalizeFunction(F);
 }
 
@@ -92,7 +93,6 @@ void normalizeModule(Module& M) {
   InlineSimpleFunction::normalizeModule(M);
   InitGlobal::normalizeModule(M);
   UninlineInstruction::normalizeModule(M);
-  ElimIdenticalInstrs::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }
 

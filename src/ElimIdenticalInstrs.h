@@ -20,11 +20,11 @@ using namespace llvm;
 
 namespace discover {
 
-struct ElimIdenticalInstrs : public ModulePass {
+struct ElimIdenticalInstrs : public FunctionPass {
   static char ID;
   static bool normalizeFunction(Function &F);
 
-  ElimIdenticalInstrs() : ModulePass(ID) {}
+  ElimIdenticalInstrs() : FunctionPass(ID) {}
 
   virtual bool runOnFunction(Function &F) override;
 };

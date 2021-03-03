@@ -3,6 +3,9 @@
 using namespace discover;
 using namespace llvm;
 
+using GEPInstList = std::vector<GetElementPtrInst*>;
+
+
 /*
  * This pass combines a sequence of GEP instructions that serve to compute
  * the memory address of only 1 element
@@ -18,8 +21,6 @@ using namespace llvm;
  */
 
 char CombineGEP::ID = 0;
-
-using GEPInstList = std::vector<GetElementPtrInst*>;
 
 /*
  * Combine GEP Instructions
