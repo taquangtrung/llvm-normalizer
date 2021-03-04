@@ -47,8 +47,10 @@ IdentInstsList findGEPOfSameElemPtr(Function &F) {
 
       GetElementPtrInst *gepInst = dyn_cast<GetElementPtrInst>(&I);
 
-      Value *gepSrc = gepInst->getOperand(0);
       int numIdxs = gepInst->getNumIndices();
+      Value *gepSrc = gepInst->getOperand(0);
+      if (isa<UndefValue>(gepSrc) || isa<GlobalValue>(gepSrc))
+        continue;
 
       InstList otherIdentInsts;
 
@@ -101,6 +103,8 @@ IdentInstsList findPHINodeOfSameIncoming(Function &F) {
 
       int numIncoming = phiNode->getNumIncomingValues();
       Value* firstIncoming = phiNode->getIncomingValue(0);
+      if (isa<UndefValue>(firstIncoming) || isa<GlobalValue>(firstIncoming))
+        continue;
 
       InstList otherIdentInsts;
       for (User *user: firstIncoming->users()) {
@@ -152,6 +156,9 @@ IdentInstsList findCastInstsOfSameSourceAndType(Function &F) {
       CastInst *castInst = dyn_cast<CastInst>(&I);
       Value *castSrc = castInst->getOperand(0);
 
+      if (isa<UndefValue>(castSrc) || isa<GlobalValue>(castSrc))
+        continue;
+
       InstList otherIdentInsts;
       for (User *user: castSrc->users()) {
         if (!isa<CastInst>(user) || user == castInst)
@@ -184,8 +191,8 @@ void eliminateIdenticalInstrs(Function &F, IdentInstsList identInstsList) {
 
     for (auto it2 = otherInsts.begin(); it2 != otherInsts.end(); it2++) {
       Instruction *otherInst = *it2;
-      debug() << " replace: " << *otherInst << "\n"
-              << "      by: " << *keepInst << "\n";
+      debug() << " replace: " << *otherInst << " in " << otherInst->getFunction()->getName() << "\n"
+              << "      by: " << *keepInst << " in " << keepInst->getFunction()->getName() << "\n";
       llvm::replaceOperand(&F, otherInst, keepInst);
       otherInst->removeFromParent();
     }

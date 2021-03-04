@@ -35,9 +35,9 @@ bool SplitCallInstrs::normalizeFunction(Function &F) {
 }
 
 static RegisterPass<SplitCallInstrs> X("SplitCallInstrs",
-                                  "SplitCallInstrs Pass",
-                                  false /* Only looks at CFG */,
-                                  false /* Analysis Pass */);
+                                       "SplitCallInstrs Pass",
+                                       false /* Only looks at CFG */,
+                                       false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,

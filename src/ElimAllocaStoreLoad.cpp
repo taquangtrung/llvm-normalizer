@@ -63,7 +63,7 @@ std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
       StoreInst *storeInst;
       std::vector<LoadInst*> loadInsts;
 
-      bool hasOnlyStoreLoadInst = true;
+      bool hasOnlyStoreDstLoad = true;
       int numStoreInst = 0;
       int numLoadInst = 0;
 
@@ -71,24 +71,24 @@ std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
         Value *instUser = *it;
         // debug() << "  user: " << *it->getUser() << "\n";
 
-        if (isa<StoreInst>(instUser)) {
-          storeInst = dyn_cast<StoreInst>(instUser);
+        if (storeInst = dyn_cast<StoreInst>(instUser)) {
+          if (storeInst->getOperand(1) != allocInst)
+            hasOnlyStoreDstLoad = false;
           // debug() << "  StoreInst: " << *storeInst << "\n";
           numStoreInst++;
         }
-        else if (isa<LoadInst>(instUser)) {
-          LoadInst *loadInst = dyn_cast<LoadInst>(instUser);
+        else if (LoadInst *loadInst = dyn_cast<LoadInst>(instUser)) {
           // debug() << "  LoadInst: " << *loadInst << "\n";
           loadInsts.push_back(loadInst);
           numLoadInst++;
         }
         else {
-          hasOnlyStoreLoadInst = false;
+          hasOnlyStoreDstLoad = false;
           break;
         }
       }
 
-      if (hasOnlyStoreLoadInst && numStoreInst == 1 && numLoadInst > 0) {
+      if (hasOnlyStoreDstLoad && numStoreInst == 1 && numLoadInst > 0) {
         AllocaStoreLoads candidate = std::make_tuple(allocInst, storeInst, loadInsts);
         candidateAllocaStoreLoadList.push_back(candidate);
       }
