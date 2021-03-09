@@ -79,6 +79,11 @@ Arguments parseArguments(int argc, char** argv) {
   return args;
 }
 
+void normalizeGlobal(Module& M) {
+  InitGlobal::normalizeModule(M);
+}
+
+
 void normalizeFunction(Function& F) {
   UninlineInstruction::normalizeFunction(F);
   CombineGEP::normalizeFunction(F);
@@ -90,7 +95,6 @@ void normalizeFunction(Function& F) {
 void normalizeModule(Module& M) {
   ElimUnusedAuxFunction::normalizeModule(M);
   InlineSimpleFunction::normalizeModule(M);
-  InitGlobal::normalizeModule(M);
   ElimUnusedGlobal::normalizeModule(M);
 }
 
@@ -113,6 +117,9 @@ int main(int argc, char** argv) {
             << "BEFORE NORMALIZATION:\n";
     M->print(debug(), nullptr);
   }
+
+  // Normalize globals first
+  normalizeGlobal(*M);
 
   // Run each FunctionPass
   FunctionList &FS = M->getFunctionList();
