@@ -10,8 +10,8 @@
 namespace llvm {
 
 extern bool debugging;
-extern bool print_input_program;
-extern bool print_output_program;
+extern bool printInputProgram;
+extern bool printOutputProgram;
 
 raw_ostream &debug();
 raw_ostream &error();

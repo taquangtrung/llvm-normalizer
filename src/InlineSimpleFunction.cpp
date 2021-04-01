@@ -138,6 +138,28 @@ bool InlineSimpleFunction::runOnModule(Module &M) {
   return true;
 }
 
+bool InlineSimpleFunction::inlineFunction(Module &M, string &funcName) {
+
+  FunctionList &funcList = M.getFunctionList();
+
+  Function *inlineFunc = NULL;
+
+  for (Function &F : funcList) {
+    if (F.getName().equals(funcName)) {
+      inlineFunc = &F;
+      break;
+    }
+  }
+
+  if (inlineFunc == NULL) {
+    debug() << "Error: function not found: " << funcName << "\n";
+    return false;
+  }
+
+  InlineSimpleFunction pass;
+  return pass.inlineFunction(M, inlineFunc);
+}
+
 bool InlineSimpleFunction::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
           << "Inlining Internal Functions...\n";

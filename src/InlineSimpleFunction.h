@@ -29,6 +29,7 @@ namespace discover {
 struct InlineSimpleFunction : public ModulePass {
   static char ID;
   static bool normalizeModule(Module &M);
+  static bool inlineFunction(Module &M, string &funcName);
 
   void setInlineableFunctions(Module &M);
   Function* findCandidate(Module &M, FunctionSet visited);

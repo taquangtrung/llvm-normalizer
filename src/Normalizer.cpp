@@ -29,9 +29,8 @@ using namespace discover;
 typedef struct Arguments {
   string inputFile;
   string outputFile;
-  bool debugging;
-  bool print_input_program;
-  bool print_output_program;
+  bool normalizeAll;
+  string inlineFunction;
 } Arguments;
 
 Arguments parseArguments(int argc, char** argv) {
@@ -44,37 +43,44 @@ Arguments parseArguments(int argc, char** argv) {
     ("o", "Output file", cxxopts::value<std::string>())
     ("output", "Output file", cxxopts::value<std::string>())
     ("debug", "Enable debugging")
+    ("inline-function", "Inline specific function", cxxopts::value<std::string>())
     ("pip", "Print input program")
     ("pop", "Print output program")
     ("help", "Help");
+
+  // normalize all by default
+  args.normalizeAll = true;
 
   // parse arguments by positional and flags
   options.parse_positional({"input"});
   auto parsedOptions = options.parse(argc, argv);
 
   // get input file
-  string inputFile = parsedOptions["input"].as<std::string>();
-  if (inputFile.empty()) {
+  args.inputFile = parsedOptions["input"].as<std::string>();
+  if (args.inputFile.empty()) {
     cerr << "Input file not found";
     exit(1);
   }
-  args.inputFile = inputFile;
-  cout << "Input File: " << inputFile << std::endl;
+  cout << "Input File: " << args.inputFile << std::endl;
 
   // get output file
-  std::string outputFile;
   if (parsedOptions.count("output")) {
-    outputFile = parsedOptions["output"].as<std::string>();
+    args.outputFile = parsedOptions["output"].as<std::string>();
+    cout << "Output File: " << args.outputFile << std::endl;
   }
-  if (!outputFile.empty()) {
-    args.outputFile = outputFile;
-    cout << "Output File: " << outputFile << std::endl;
+
+  // get inlining function
+  if (parsedOptions.count("inline-function")) {
+    args.normalizeAll = false;
+    args.inlineFunction = parsedOptions["inline-function"].as<std::string>();
+    cout << "Function to be inline: " << args.inlineFunction << std::endl;
   }
+
 
   // get some debugging flags
   debugging = parsedOptions["debug"].as<bool>();
-  print_input_program = parsedOptions["pip"].as<bool>();
-  print_output_program = parsedOptions["pop"].as<bool>();
+  printInputProgram = parsedOptions["pip"].as<bool>();
+  printOutputProgram = parsedOptions["pop"].as<bool>();
 
   return args;
 }
@@ -106,31 +112,44 @@ int main(int argc, char** argv) {
   string inputFile = args.inputFile;
   string outputFile = args.outputFile;
 
+  llvm::outs() << "normalize all? " << args.normalizeAll << "\n";
+
   // process bitcode
   SMDiagnostic err;
   static LLVMContext context;
 
   std::unique_ptr<Module> M = parseIRFile(inputFile, err, context);
 
-  if (print_input_program) {
+  if (printInputProgram) {
     debug() << "===============================\n"
             << "BEFORE NORMALIZATION:\n";
     M->print(debug(), nullptr);
   }
 
-  // Normalize globals first
-  normalizeGlobal(*M);
+  // Normalize all
+  if (args.normalizeAll) {
+    // Normalize globals first
+    normalizeGlobal(*M);
 
-  // Run each FunctionPass
-  FunctionList &FS = M->getFunctionList();
-  for (Function &F: FS) {
-    normalizeFunction(F);
+    // Run each FunctionPass
+    FunctionList &FS = M->getFunctionList();
+    for (Function &F: FS) {
+      normalizeFunction(F);
+    }
+
+    // Run ModulePass
+    normalizeModule(*M);
+  }
+  else {
+    if (!args.inlineFunction.empty()) {
+      string &funcName = args.inlineFunction;
+      debug() << "<<<<<<<<<<<<<<<<<<<\n"
+              << "Inline function: " << funcName << "\n";
+      InlineSimpleFunction::inlineFunction(*M, funcName);
+    }
   }
 
-  // Run ModulePass
-  normalizeModule(*M);
-
-  if (print_output_program) {
+  if (printOutputProgram) {
     debug() << "===============================\n"
             << "AFTER NORMALIZATION:\n";
     M->print(debug(), nullptr);
