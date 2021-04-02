@@ -138,26 +138,31 @@ bool InlineSimpleFunction::runOnModule(Module &M) {
   return true;
 }
 
-bool InlineSimpleFunction::inlineFunction(Module &M, string &funcName) {
+bool InlineSimpleFunction::inlineFunction(Module &M, vector<string> funcNames) {
 
-  FunctionList &funcList = M.getFunctionList();
 
-  Function *inlineFunc = NULL;
+  for(string funcName: funcNames) {
 
-  for (Function &F : funcList) {
-    if (F.getName().equals(funcName)) {
-      inlineFunc = &F;
-      break;
+    Function *inlineFunc = NULL;
+
+    for (Function &F : M.getFunctionList()) {
+      if (F.getName().equals(funcName)) {
+        inlineFunc = &F;
+        break;
+      }
     }
+
+
+    if (inlineFunc == NULL) {
+      debug() << "Error: function not found: " << funcName << "\n";
+      return false;
+    }
+
+    InlineSimpleFunction pass;
+    pass.inlineFunction(M, inlineFunc);
   }
 
-  if (inlineFunc == NULL) {
-    debug() << "Error: function not found: " << funcName << "\n";
-    return false;
-  }
-
-  InlineSimpleFunction pass;
-  return pass.inlineFunction(M, inlineFunc);
+  return true;
 }
 
 bool InlineSimpleFunction::normalizeModule(Module &M) {

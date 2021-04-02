@@ -2,6 +2,7 @@
 
 #include "llvm/IR/Type.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 
@@ -25,6 +26,8 @@ struct ElimIdenticalInstrs : public FunctionPass {
   static bool normalizeFunction(Function &F);
 
   ElimIdenticalInstrs() : FunctionPass(ID) {}
+
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const override;
 
   virtual bool runOnFunction(Function &F) override;
 };

@@ -183,7 +183,7 @@ IdentInstsList findCastInstsOfSameSourceAndType(Function &F) {
 /*
  * Eliminate identical instructions
  */
-void eliminateIdenticalInstrs(Function &F, IdentInstsList identInstsList) {
+void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList identInstsList) {
   for (auto it = identInstsList.begin(); it != identInstsList.end(); it++) {
     IdentInsts identInsts = *it;
     Instruction *keepInst = identInsts.first;
@@ -191,10 +191,12 @@ void eliminateIdenticalInstrs(Function &F, IdentInstsList identInstsList) {
 
     for (auto it2 = otherInsts.begin(); it2 != otherInsts.end(); it2++) {
       Instruction *otherInst = *it2;
-      debug() << " replace: " << *otherInst << " in " << otherInst->getFunction()->getName() << "\n"
-              << "      by: " << *keepInst << " in " << keepInst->getFunction()->getName() << "\n";
-      llvm::replaceOperand(&F, otherInst, keepInst);
-      otherInst->removeFromParent();
+      if (DT.dominates(keepInst, otherInst)) {
+        debug() << " replace: " << *otherInst << " in " << otherInst->getFunction()->getName() << "\n"
+                << "      by: " << *keepInst << " in " << keepInst->getFunction()->getName() << "\n";
+        llvm::replaceOperand(&F, otherInst, keepInst);
+        otherInst->removeFromParent();
+      }
     }
   }
 }
@@ -203,21 +205,27 @@ void eliminateIdenticalInstrs(Function &F, IdentInstsList identInstsList) {
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
+  DominatorTreeWrapperPass &DTP = getAnalysis<DominatorTreeWrapperPass>();
+  DominatorTree &DT = DTP.getDomTree();
+
   // find and eliminate identical CastInst
   IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
-  eliminateIdenticalInstrs(F, identCastList);
+  eliminateIdenticalInstrs(F, DT, identCastList);
 
   // find and eliminate identical PHINode
   IdentInstsList identPHIList = findPHINodeOfSameIncoming(F);
-  eliminateIdenticalInstrs(F, identPHIList);
+  eliminateIdenticalInstrs(F, DT, identPHIList);
 
   // find and eliminate identical GetElementPtrInst
   IdentInstsList identGEPList = findGEPOfSameElemPtr(F);
-  eliminateIdenticalInstrs(F, identGEPList);
+  eliminateIdenticalInstrs(F, DT, identGEPList);
 
   return true;
 }
 
+void ElimIdenticalInstrs::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<DominatorTreeWrapperPass>();
+}
 
 /*
  * Static function, used by this normalizer

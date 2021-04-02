@@ -142,10 +142,26 @@ int main(int argc, char** argv) {
   }
   else {
     if (!args.inlineFunction.empty()) {
-      string &funcName = args.inlineFunction;
+      string &inlineFuncs = args.inlineFunction;
+
+      vector<string> funcNames;
+      size_t pos;
+      while ((pos = inlineFuncs.find("|")) != std::string::npos) {
+        funcNames.push_back(inlineFuncs.substr(0, pos));
+        inlineFuncs.erase(0, pos + 1);
+      }
+      if (!inlineFuncs.empty())
+        funcNames.push_back(inlineFuncs);
+
       debug() << "<<<<<<<<<<<<<<<<<<<\n"
-              << "Inline function: " << funcName << "\n";
-      InlineSimpleFunction::inlineFunction(*M, funcName);
+              << "Inline functions: ";
+
+      for (string funcName: funcNames) {
+        debug() << funcName << ", ";
+      }
+      debug() << "\n";
+
+      InlineSimpleFunction::inlineFunction(*M, funcNames);
     }
   }
 
