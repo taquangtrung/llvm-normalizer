@@ -29,7 +29,6 @@ using IdentInstsList = std::vector<IdentInsts>;
 
 char ElimIdenticalInstrs::ID = 0;
 
-
 /*
  * Find GetElementPtrInst of the same element pointer
  */
@@ -191,12 +190,12 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
 
     for (auto it2 = otherInsts.begin(); it2 != otherInsts.end(); it2++) {
       Instruction *otherInst = *it2;
-      if (DT.dominates(keepInst, otherInst)) {
+      // if (DT.dominates(keepInst, otherInst)) {
         debug() << " replace: " << *otherInst << " in " << otherInst->getFunction()->getName() << "\n"
                 << "      by: " << *keepInst << " in " << keepInst->getFunction()->getName() << "\n";
         llvm::replaceOperand(&F, otherInst, keepInst);
         otherInst->removeFromParent();
-      }
+      // }
     }
   }
 }
@@ -205,8 +204,8 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
-  DominatorTreeWrapperPass &DTP = getAnalysis<DominatorTreeWrapperPass>();
-  DominatorTree &DT = DTP.getDomTree();
+  // DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+  DominatorTree DT;
 
   // find and eliminate identical CastInst
   IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
@@ -221,10 +220,6 @@ bool ElimIdenticalInstrs::runOnFunction(Function &F) {
   eliminateIdenticalInstrs(F, DT, identGEPList);
 
   return true;
-}
-
-void ElimIdenticalInstrs::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<DominatorTreeWrapperPass>();
 }
 
 /*

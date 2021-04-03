@@ -112,8 +112,6 @@ int main(int argc, char** argv) {
   string inputFile = args.inputFile;
   string outputFile = args.outputFile;
 
-  llvm::outs() << "normalize all? " << args.normalizeAll << "\n";
-
   // process bitcode
   SMDiagnostic err;
   static LLVMContext context;

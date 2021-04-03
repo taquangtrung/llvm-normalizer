@@ -6,6 +6,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 
+#include "llvm/InitializePasses.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
@@ -25,9 +26,12 @@ struct ElimIdenticalInstrs : public FunctionPass {
   static char ID;
   static bool normalizeFunction(Function &F);
 
+
   ElimIdenticalInstrs() : FunctionPass(ID) {}
 
-  virtual void getAnalysisUsage(AnalysisUsage &AU) const override;
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    AU.addRequired<DominatorTreeWrapperPass>();
+  }
 
   virtual bool runOnFunction(Function &F) override;
 };
