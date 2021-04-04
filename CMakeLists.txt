@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 message(STATUS "Set C++ standard: C++-17")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions -fPIC")
 
 # Determine the OS type
 if(UNIX AND NOT APPLE)
@@ -63,6 +64,7 @@ message(STATUS "Using the file: ${LLVM_DIR}/LLVMConfig.cmake")
 # The below LLVM variables are read from ${LLVM_DIR}/LLVMConfig.cmake
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
+link_directories(${LLVM_LIBRARY_DIRS})
 
 # Setting for third-party libraries
 set(EXTRA_LIB_DIRS "${CMAKE_CURRENT_LIST_DIR}/lib")

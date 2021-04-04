@@ -24,17 +24,8 @@ using namespace llvm;
 
 namespace llvm {
 
-struct ElimIdenticalInstrs : public FunctionPass {
-
-  static char ID;
-  ElimIdenticalInstrs() : FunctionPass(ID) {}
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<DominatorTreeWrapperPass>();
-  }
-
-  bool runOnFunction(Function &F) override;
-
+class ElimIdenticalInstrs {
+public:
   static bool normalizeFunction(Function &F);
 };
 

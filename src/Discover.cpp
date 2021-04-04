@@ -1,6 +1,14 @@
 #include "Discover.h"
+#include "InitGlobal.h"
+#include "UninlineInstruction.h"
+#include "InlineSimpleFunction.h"
+#include "ElimUnusedAuxFunction.h"
+#include "ElimUnusedGlobal.h"
+#include "ElimIdenticalInstrs.h"
+#include "CombineGEP.h"
+#include "ElimAllocaStoreLoad.h"
 
-// using namespace discover;
+using namespace discover;
 using namespace llvm;
 
 /*
@@ -12,49 +20,80 @@ char Discover::ID = 0;
 /*
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
-// PreservedAnalyses Discover::run(Function &F, FunctionAnalysisManager &FAM) {
+
+void normalizeGlobal(Module& M) {
+  InitGlobal::normalizeModule(M);
+}
+
+
+void normalizeFunction(ModulePass* MP, Function& F) {
+  UninlineInstruction::normalizeFunction(F);
+  CombineGEP::normalizeFunction(F);
+  ElimIdenticalInstrs::normalizeFunction(F);
+  ElimAllocaStoreLoad::normalizeFunction(F);
+}
+
+
+void normalizeModule(Module& M) {
+  ElimUnusedAuxFunction::normalizeModule(M);
+  InlineSimpleFunction::normalizeModule(M);
+  ElimUnusedGlobal::normalizeModule(M);
+}
+
+void Discover::getAnalysisUsage(AnalysisUsage &AU) const {
+  // AU.addRequired<DominatorTreeWrapperPass>();
+  AU.setPreservesAll();
+  AU.addRequired<llvm::AAResultsWrapperPass>();
+}
+
+
+// bool Discover::runOnFunction(Function &F) {
+//   AliasAnalysis *AA = &this->getAnalysis<AAResultsWrapperPass>().getAAResults();
+
+//   return false;
+// }
+
+// bool Discover::runOnModule(Module &M) {
+//   FunctionList &FS = M.getFunctionList();
+
+//   llvm::DominatorTree domTree{&func, func};
+//   llvm::LoopInfo loopInfo{&func, domTree};
+
+//   for (Module::iterator func_iter = M.begin(), func_iter_end = M.end();
+//        func_iter != func_iter_end; ++func_iter) {
+//     Function &F = *func_iter;
+//     AliasAnalysis *AA = &getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+//   }
+
+//   // for (Function &F: FS)
+
+
+//   return false;
+// }
+
 bool Discover::runOnModule(Module &M) {
-  DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-  // DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
+  // Normalize globals first
+  normalizeGlobal(M);
 
-  // find and eliminate identical CastInst
-  IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
-  eliminateIdenticalInstrs(F, DT, identCastList);
+  // Run each FunctionPass
+  FunctionList &FS = M.getFunctionList();
 
-  // find and eliminate identical PHINode
-  IdentInstsList identPHIList = findPHINodeOfSameIncoming(F);
-  eliminateIdenticalInstrs(F, DT, identPHIList);
+  for (Function &F: FS) {
+    normalizeFunction(this, F);
+  }
 
-  // find and eliminate identical GetElementPtrInst
-  IdentInstsList identGEPList = findGEPOfSameElemPtr(F);
-  eliminateIdenticalInstrs(F, DT, identGEPList);
-
+  // Run ModulePass
+  normalizeModule(M);
   return true;
 }
 
-/*
- * Static function, used by this normalizer
- */
-bool Discover::normalizeFunction(Function &F) {
-  debug() << "\n=========================================\n"
-          << "Eliminate Common Instruction in function: "
-          << F.getName() << "\n";
+static RegisterPass<Discover> XF("discover",
+                                "Discover",
+                                true /* Only looks at CFG */,
+                                true /* Analysis Pass */);
 
-  Discover pass;
-
-  // FunctionAnalysisManager FAM;
-  // return pass.run(F, FAM);
-
-  return pass.runOnFunction(F);
-}
-
-static RegisterPass<Discover> X("Discover",
-                                     "Discover",
-                                     false /* Only looks at CFG */,
-                                     false /* Analysis Pass */);
-
-static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-                                [](const PassManagerBuilder &Builder,
-                                   legacy::PassManagerBase &PM) {
-                                  PM.add(new Discover());
-                                });
+// static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
+//                                 [](const PassManagerBuilder &Builder,
+//                                    legacy::PassManagerBase &PM) {
+//                                   PM.add(new Discover());
+//                                 });

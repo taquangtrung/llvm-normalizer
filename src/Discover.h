@@ -16,26 +16,29 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "llvm/Analysis/AliasAnalysis.h"
+
 #include "Debug.h"
 #include "Common.h"
+
+
 
 using namespace std;
 using namespace llvm;
 
-namespace llvm {
+namespace {
 
 struct Discover : public ModulePass {
+// struct Discover : public FunctionPass {
 
   static char ID;
   Discover() : ModulePass(ID) {}
+  // Discover() : FunctionPass(ID) {}
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<DominatorTreeWrapperPass>();
-  }
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 
-  bool runOnFunction(Function &F) override;
-
-  static bool normalizeFunction(Function &F);
+  // bool runOnFunction(Function &F) override;
+  bool runOnModule(Module &M) override;
 };
 
 } // namespace discover
