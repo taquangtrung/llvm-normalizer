@@ -1,6 +1,6 @@
 #include "ElimIdenticalInstrs.h"
 
-using namespace discover;
+// using namespace discover;
 using namespace llvm;
 
 using InstList = std::vector<Instruction*>;
@@ -203,9 +203,10 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
 /*
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
+// PreservedAnalyses ElimIdenticalInstrs::run(Function &F, FunctionAnalysisManager &FAM) {
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
-  // DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-  DominatorTree DT;
+  DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+  // DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
 
   // find and eliminate identical CastInst
   IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
@@ -231,6 +232,10 @@ bool ElimIdenticalInstrs::normalizeFunction(Function &F) {
           << F.getName() << "\n";
 
   ElimIdenticalInstrs pass;
+
+  // FunctionAnalysisManager FAM;
+  // return pass.run(F, FAM);
+
   return pass.runOnFunction(F);
 }
 

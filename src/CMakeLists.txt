@@ -19,11 +19,21 @@ llvm_map_components_to_libnames(LLVM_LIBS
 # add_library(LLVMUninlineConstExpr MODULE UninlineConstExpr.cpp)
 
 if (APPLE)
+  # # compile to a library
+  # add_library(Normalizer MODULE ${SOURCE_FILES})
+  # compile to a binary file
   add_executable(normalizer ${SOURCE_FILES})
 else()
+  # # compile to a library
+  # add_library(Normalizer MODULE ${SOURCE_FILES})
+  # compile to a binary file
   add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
   add_backward(normalizer)
 endif()
+
+# set_target_properties(NormalizerPass PROPERTIES
+#   COMPILE_FLAGS "-fno-rtti"
+#   )
 
 target_link_libraries(normalizer ${LLVM_LIBS})
 # target_link_libraries(LLVMUninlineConstExpr ${LLVM_LIBS} )

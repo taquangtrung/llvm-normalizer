@@ -7,6 +7,7 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IR/Dominators.h"
 
 #include "llvm/Analysis/InlineCost.h"
 
@@ -36,6 +37,11 @@ struct InlineSimpleFunction : public ModulePass {
   bool inlineFunction(Module &M, Function* func);
 
   InlineSimpleFunction() : ModulePass(ID) {}
+
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    ModulePass::getAnalysisUsage(AU);
+    AU.addRequired<DominatorTreeWrapperPass>();
+  }
 
   virtual bool runOnModule(Module &M) override;
 };

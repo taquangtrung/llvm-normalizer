@@ -24,10 +24,10 @@ using namespace llvm;
 
 namespace llvm {
 
-struct ElimIdenticalInstrs : public FunctionPass {
+struct Discover : public ModulePass {
 
   static char ID;
-  ElimIdenticalInstrs() : FunctionPass(ID) {}
+  Discover() : ModulePass(ID) {}
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<DominatorTreeWrapperPass>();

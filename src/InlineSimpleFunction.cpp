@@ -169,6 +169,8 @@ bool InlineSimpleFunction::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
           << "Inlining Internal Functions...\n";
 
+  // DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+
   InlineSimpleFunction pass;
   return pass.runOnModule(M);
 }
