@@ -12,6 +12,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "llvm/Analysis/PostDominators.h"
+#include "llvm/Analysis/CFG.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -22,11 +23,18 @@
 using namespace std;
 using namespace llvm;
 
-namespace llvm {
+namespace discover {
 
-class ElimIdenticalInstrs {
-public:
+struct ElimIdenticalInstrs : public FunctionPass {
+  static char ID;
   static bool normalizeFunction(Function &F);
+
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    AU.addRequired<DominatorTreeWrapperPass>();
+  }
+
+  ElimIdenticalInstrs() : FunctionPass(ID) {}
+  virtual bool runOnFunction(Function &F) override;
 };
 
 } // namespace discover

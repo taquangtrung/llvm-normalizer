@@ -40,7 +40,7 @@ struct InlineSimpleFunction : public ModulePass {
 
   virtual void getAnalysisUsage(AnalysisUsage &AU) const {
     ModulePass::getAnalysisUsage(AU);
-    AU.addRequired<DominatorTreeWrapperPass>();
+    // AU.addRequired<DominatorTreeWrapperPass>();
   }
 
   virtual bool runOnModule(Module &M) override;

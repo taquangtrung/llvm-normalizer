@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "llvm/IRReader/IRReader.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 
 #include "llvm/Support/CommandLine.h"
@@ -124,19 +126,39 @@ int main(int argc, char** argv) {
     M->print(debug(), nullptr);
   }
 
+  // legacy::PassManager GPM;
+  // GPM.add(new InitGlobal());
+
+  // legacy::PassManager FPM;
+  // FPM.add(new DominatorTreeWrapperPass());
+  // FPM.add(new UninlineInstruction);
+  // FPM.add(new CombineGEP());
+  // FPM.add(new ElimIdenticalInstrs());
+  // FPM.add(new ElimAllocaStoreLoad());
+
+  // legacy::PassManager MPM;
+  // MPM.add(new InitGlobal());
+  // MPM.add(new ElimUnusedAuxFunction());
+  // MPM.add(new InlineSimpleFunction());
+  // MPM.add(new ElimUnusedGlobal());
+
+
   // Normalize all
   if (args.normalizeAll) {
     // Normalize globals first
     normalizeGlobal(*M);
+    // GPM.run(*M);
 
     // Run each FunctionPass
     FunctionList &FS = M->getFunctionList();
     for (Function &F: FS) {
       normalizeFunction(F);
     }
+    // FPM.run(*M);
 
     // Run ModulePass
     normalizeModule(*M);
+    // MPM.run(*M);
   }
   else {
     if (!args.inlineFunction.empty()) {

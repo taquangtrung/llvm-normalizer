@@ -169,14 +169,12 @@ bool InlineSimpleFunction::normalizeModule(Module &M) {
   debug() << "\n=========================================\n"
           << "Inlining Internal Functions...\n";
 
-  // DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-
   InlineSimpleFunction pass;
   return pass.runOnModule(M);
 }
 
 static RegisterPass<InlineSimpleFunction> X("InlineSimpleFunction",
-                                      "Normalize ConstantExpr",
+                                      "Inline Simple Function",
                                       false /* Only looks at CFG */,
                                       false /* Analysis Pass */);
 
