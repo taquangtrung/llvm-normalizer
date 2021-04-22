@@ -3,11 +3,20 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/IRPrintingPasses.h"
+
 #include "llvm/Bitcode/BitcodeWriter.h"
+#include "llvm/Bitcode/BitcodeWriterPass.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
+
+#include "llvm/Transforms/Utils/Debugify.h"
 
 // #include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
 
@@ -87,6 +96,53 @@ Arguments parseArguments(int argc, char** argv) {
   return args;
 }
 
+static cl::opt<bool> DebugifyEach(
+    "debugify-each",
+    cl::desc("Start each pass with debugify and end it with check-debugify"));
+
+class NormalizerCustomPassManager : public legacy::PassManager {
+  DebugifyStatsMap DIStatsMap;
+
+public:
+  using super = legacy::PassManager;
+
+  void add(Pass *P) override {
+    // Wrap each pass with (-check)-debugify passes if requested, making
+    // exceptions for passes which shouldn't see -debugify instrumentation.
+    bool WrapWithDebugify = DebugifyEach && !P->getAsImmutablePass() &&
+                            !isIRPrintingPass(P) && !isBitcodeWriterPass(P);
+    if (!WrapWithDebugify) {
+      super::add(P);
+      return;
+    }
+
+    // Apply -debugify/-check-debugify before/after each pass and collect
+    // debug info loss statistics.
+    PassKind Kind = P->getPassKind();
+    StringRef Name = P->getPassName();
+
+    // TODO: Implement Debugify for LoopPass.
+    switch (Kind) {
+      case PT_Function:
+        super::add(createDebugifyFunctionPass());
+        super::add(P);
+        super::add(createCheckDebugifyFunctionPass(true, Name, &DIStatsMap));
+        break;
+      case PT_Module:
+        super::add(createDebugifyModulePass());
+        super::add(P);
+        super::add(createCheckDebugifyModulePass(true, Name, &DIStatsMap));
+        break;
+      default:
+        super::add(P);
+        break;
+    }
+  }
+
+  const DebugifyStatsMap &getDebugifyStatsMap() const { return DIStatsMap; }
+};
+
+
 void normalizeGlobal(Module& M) {
   InitGlobal::normalizeModule(M);
 }
@@ -107,7 +163,7 @@ void normalizeModule(Module& M) {
 }
 
 
-int main(int argc, char** argv) {
+int main_old(int argc, char** argv) {
   cout << "LLVM Normalizer for Discover" << std::endl;
 
   Arguments args = parseArguments(argc, argv);
@@ -198,6 +254,62 @@ int main(int argc, char** argv) {
     WriteBitcodeToFile(*M, OS);
     OS.flush();
   }
+
+  return 0;
+}
+
+// Use an OptionCategory to store all the flags of this tool
+cl::OptionCategory DiscoverNormalizerCategory("LLVM Discover Normalizer Options",
+    "Options for the LLVM-normalizer tool of the project Discover.");
+
+static cl::opt<std::string> OutputFilename("o",
+    cl::desc("Output filename"), cl::value_desc("filename"),
+    cl::cat(DiscoverNormalizerCategory));
+
+static cl::list<std::string> InputFilenames("i",
+    cl::desc("Input files"), cl::value_desc("filenames"),
+    cl::OneOrMore, cl::cat(DiscoverNormalizerCategory));
+
+void setupCommandLineOptions(int argc, char** argv) {
+  // reset existing options of LLVM
+  // cl::ResetCommandLineParser();
+
+  cl::HideUnrelatedOptions(DiscoverNormalizerCategory);
+
+  cl::ParseCommandLineOptions(argc, argv, "LLVM Discover Normalizer!\n");
+}
+
+int main(int argc, char** argv) {
+  // cout << "LLVM Normalizer for Discover" << std::endl;
+
+  InitLLVM X(argc, argv);
+
+  setupCommandLineOptions(argc, argv);
+
+  // Enable debug stream buffering.
+  // EnableDebugBuffering = true;
+
+  LLVMContext Context;
+
+  InitializeAllTargets();
+  InitializeAllTargetMCs();
+  InitializeAllAsmPrinters();
+  InitializeAllAsmParsers();
+
+  // Initialize passes
+  PassRegistry &Registry = *PassRegistry::getPassRegistry();
+  initializeCore(Registry);
+  initializeCoroutines(Registry);
+  initializeScalarOpts(Registry);
+  initializeObjCARCOpts(Registry);
+  initializeVectorization(Registry);
+  initializeIPO(Registry);
+  initializeAnalysis(Registry);
+  initializeTransformUtils(Registry);
+  initializeInstCombine(Registry);
+  initializeAggressiveInstCombine(Registry);
+  initializeInstrumentation(Registry);
+  initializeTarget(Registry);
 
   return 0;
 }

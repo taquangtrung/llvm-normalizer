@@ -206,9 +206,9 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
-  // DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+  DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
   // DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
-  DominatorTree DT;
+  // DominatorTree DT;
   // DominatorTree DT(F);
 
   // find and eliminate identical CastInst

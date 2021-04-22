@@ -38,9 +38,9 @@ if (APPLE)
   add_executable(normalizer ${SOURCE_FILES})
 else()
   # # compile to a library
-  add_library(DiscoverObj OBJECT ${DISCOVER_SOURCE_FILES})
-  add_library(Discover SHARED $<TARGET_OBJECTS:DiscoverObj>)
-  add_library(DiscoverStatic STATIC $<TARGET_OBJECTS:DiscoverObj>)
+  # add_library(DiscoverObj OBJECT ${DISCOVER_SOURCE_FILES})
+  # add_library(Discover SHARED $<TARGET_OBJECTS:DiscoverObj>)
+  # add_library(DiscoverStatic STATIC $<TARGET_OBJECTS:DiscoverObj>)
   # compile to a binary file
   add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
   add_backward(normalizer)
@@ -52,11 +52,7 @@ endif()
 
 target_link_libraries(normalizer ${LLVM_LIBS})
 # target_link_libraries(Discover ${LLVM_LIBS})
-target_link_libraries (DiscoverStatic ${LLVM_LIBS})
-
-# add_library (ptabenevalaaObj OBJECT ${ptabenevalaaSourceCodes})
-# add_library (ptabenevalaa SHARED $<TARGET_OBJECTS:ptabenevalaaObj>)
-# add_library (ptabenevalaaStatic STATIC $<TARGET_OBJECTS:ptabenevalaaObj>)
+# target_link_libraries (DiscoverStatic ${LLVM_LIBS})
 
 # target_link_libraries(LLVMUninlineConstExpr ${LLVM_LIBS} )
 
