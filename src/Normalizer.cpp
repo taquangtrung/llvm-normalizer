@@ -267,7 +267,6 @@ cl::OptionCategory DiscoverNormalizerCategory("LLVM Discover Normalizer Options"
 static cl::opt<std::string> InputFilename(cl::Positional,
     cl::desc("<Input bitcode file>"), cl::init("-"), cl::value_desc("filename"));
 
-
 static cl::opt<std::string> OutputFilename("o",
     cl::desc("<Output bitcode file>"), cl::value_desc("filename"),
     cl::cat(DiscoverNormalizerCategory));
@@ -279,6 +278,11 @@ static cl::opt<std::string> ClDataLayout("data-layout",
     cl::desc("data layout string to use"),
     cl::value_desc("layout-string"), cl::init(""));
 
+static cl::opt<bool> Debug("debug",
+    cl::desc("Enable debugging"),
+    cl::cat(DiscoverNormalizerCategory));
+
+
 //----------------------------------
 
 int main(int argc, char** argv) {
@@ -289,6 +293,9 @@ int main(int argc, char** argv) {
   // Parse command line options
   cl::HideUnrelatedOptions(DiscoverNormalizerCategory);
   cl::ParseCommandLineOptions(argc, argv, "LLVM Discover Normalizer!\n");
+
+  //
+  debugging = Debug;
 
   // Enable debug stream buffering.
   // EnableDebugBuffering = true;
@@ -321,25 +328,30 @@ int main(int argc, char** argv) {
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context,
       !NoVerify, ClDataLayout);
 
-  NormalizerPassManager MPasses;
-  std::unique_ptr<legacy::FunctionPassManager> FPasses;
-  FPasses.reset(new legacy::FunctionPassManager(M.get()));
+  NormalizerPassManager ModulePasses;
+  std::unique_ptr<legacy::FunctionPassManager> FuncPasses;
+  FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
 
   // add dependent passes from LLVM
-  MPasses.add(new DominatorTreeWrapperPass());
-  MPasses.add(new PostDominatorTreeWrapperPass());
+  ModulePasses.add(new DominatorTreeWrapperPass());
+  ModulePasses.add(new PostDominatorTreeWrapperPass());
 
   // add normalization passes for Discover
-  FPasses->add(new ElimIdenticalInstrs());
+  FuncPasses->add(new ElimAllocaStoreLoad());
+  FuncPasses->add(new UninlineInstruction());
+  FuncPasses->add(new CombineGEP());
+  // FuncPasses->add(new ElimIdenticalInstrs());
 
-  // Run passes on module and functions
-  MPasses.run(*M);
+  // Run module passes
+  ModulePasses.run(*M);
 
-  FPasses->doInitialization();
+  // Run function passes
+  FuncPasses->doInitialization();
   for (Function &F: *M) {
-    FPasses->run(F);
+    debug () << "Run function passes on: " << F.getName() << "\n";
+    FuncPasses->run(F);
   }
-  FPasses->doFinalization();
+  FuncPasses->doFinalization();
 
   return 0;
 }
