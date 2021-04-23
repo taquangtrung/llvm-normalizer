@@ -100,7 +100,7 @@ static cl::opt<bool> DebugifyEach(
     "debugify-each",
     cl::desc("Start each pass with debugify and end it with check-debugify"));
 
-class NormalizerCustomPassManager : public legacy::PassManager {
+class NormalizerPassManager : public legacy::PassManager {
   DebugifyStatsMap DIStatsMap;
 
 public:
@@ -258,38 +258,43 @@ int main_old(int argc, char** argv) {
   return 0;
 }
 
+// Declare command line options
+
 // Use an OptionCategory to store all the flags of this tool
 cl::OptionCategory DiscoverNormalizerCategory("LLVM Discover Normalizer Options",
     "Options for the LLVM-normalizer tool of the project Discover.");
 
+static cl::opt<std::string> InputFilename(cl::Positional,
+    cl::desc("<Input bitcode file>"), cl::init("-"), cl::value_desc("filename"));
+
+
 static cl::opt<std::string> OutputFilename("o",
-    cl::desc("Output filename"), cl::value_desc("filename"),
+    cl::desc("<Output bitcode file>"), cl::value_desc("filename"),
     cl::cat(DiscoverNormalizerCategory));
 
-static cl::list<std::string> InputFilenames("i",
-    cl::desc("Input files"), cl::value_desc("filenames"),
-    cl::OneOrMore, cl::cat(DiscoverNormalizerCategory));
+static cl::opt<bool> NoVerify("disable-verify",
+    cl::desc("Do not run the verifier"), cl::Hidden);
 
-void setupCommandLineOptions(int argc, char** argv) {
-  // reset existing options of LLVM
-  // cl::ResetCommandLineParser();
+static cl::opt<std::string> ClDataLayout("data-layout",
+    cl::desc("data layout string to use"),
+    cl::value_desc("layout-string"), cl::init(""));
 
-  cl::HideUnrelatedOptions(DiscoverNormalizerCategory);
-
-  cl::ParseCommandLineOptions(argc, argv, "LLVM Discover Normalizer!\n");
-}
+//----------------------------------
 
 int main(int argc, char** argv) {
   // cout << "LLVM Normalizer for Discover" << std::endl;
 
   InitLLVM X(argc, argv);
 
-  setupCommandLineOptions(argc, argv);
+  // Parse command line options
+  cl::HideUnrelatedOptions(DiscoverNormalizerCategory);
+  cl::ParseCommandLineOptions(argc, argv, "LLVM Discover Normalizer!\n");
 
   // Enable debug stream buffering.
   // EnableDebugBuffering = true;
 
   LLVMContext Context;
+  SMDiagnostic Err;
 
   InitializeAllTargets();
   InitializeAllTargetMCs();
@@ -310,6 +315,31 @@ int main(int argc, char** argv) {
   initializeAggressiveInstCombine(Registry);
   initializeInstrumentation(Registry);
   initializeTarget(Registry);
+
+
+  // Load the input module...
+  std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context,
+      !NoVerify, ClDataLayout);
+
+  NormalizerPassManager MPasses;
+  std::unique_ptr<legacy::FunctionPassManager> FPasses;
+  FPasses.reset(new legacy::FunctionPassManager(M.get()));
+
+  // add dependent passes from LLVM
+  MPasses.add(new DominatorTreeWrapperPass());
+  MPasses.add(new PostDominatorTreeWrapperPass());
+
+  // add normalization passes for Discover
+  FPasses->add(new ElimIdenticalInstrs());
+
+  // Run passes on module and functions
+  MPasses.run(*M);
+
+  FPasses->doInitialization();
+  for (Function &F: *M) {
+    FPasses->run(F);
+  }
+  FPasses->doFinalization();
 
   return 0;
 }
