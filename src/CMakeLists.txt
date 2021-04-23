@@ -42,8 +42,9 @@ else()
   # add_library(Discover SHARED $<TARGET_OBJECTS:DiscoverObj>)
   # add_library(DiscoverStatic STATIC $<TARGET_OBJECTS:DiscoverObj>)
   # compile to a binary file
-  add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
-  add_backward(normalizer)
+  # add_executable(normalizer ${SOURCE_FILES} ${BACKWARD_ENABLE})
+  add_executable(normalizer ${SOURCE_FILES})
+  # add_backward(normalizer)
 endif()
 
 # set_target_properties(NormalizerPass PROPERTIES

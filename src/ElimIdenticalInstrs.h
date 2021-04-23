@@ -29,7 +29,7 @@ struct ElimIdenticalInstrs : public FunctionPass {
   static char ID;
   static bool normalizeFunction(Function &F);
 
-  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+  void getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequired<DominatorTreeWrapperPass>();
   }
 

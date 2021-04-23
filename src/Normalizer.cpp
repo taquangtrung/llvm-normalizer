@@ -274,6 +274,12 @@ static cl::opt<std::string> OutputFilename("o",
 static cl::opt<bool> NoVerify("disable-verify",
     cl::desc("Do not run the verifier"), cl::Hidden);
 
+static cl::opt<bool> VerifyEach("verify-each",
+    cl::desc("Verify after each transform"));
+
+static cl::opt<bool> DisableInline("disable-inlining",
+    cl::desc("Do not run the inliner pass"));
+
 static cl::opt<std::string> ClDataLayout("data-layout",
     cl::desc("data layout string to use"),
     cl::value_desc("layout-string"), cl::init(""));
@@ -281,6 +287,14 @@ static cl::opt<std::string> ClDataLayout("data-layout",
 static cl::opt<bool> Debug("debug",
     cl::desc("Enable debugging"),
     cl::cat(DiscoverNormalizerCategory));
+
+static void AddStandardLinkPasses(legacy::PassManagerBase &PM) {
+  PassManagerBuilder Builder;
+  Builder.VerifyInput = true;
+  Builder.OptLevel = 0;
+
+  Builder.populateLTOPassManager(PM);
+}
 
 
 //----------------------------------
@@ -323,6 +337,26 @@ int main(int argc, char** argv) {
   initializeInstrumentation(Registry);
   initializeTarget(Registry);
 
+  initializeExpandMemCmpPassPass(Registry);
+  initializeScalarizeMaskedMemIntrinPass(Registry);
+  initializeCodeGenPreparePass(Registry);
+  initializeAtomicExpandPass(Registry);
+  initializeRewriteSymbolsLegacyPassPass(Registry);
+  initializeWinEHPreparePass(Registry);
+  initializeDwarfEHPreparePass(Registry);
+  initializeSafeStackLegacyPassPass(Registry);
+  initializeSjLjEHPreparePass(Registry);
+  initializePreISelIntrinsicLoweringLegacyPassPass(Registry);
+  initializeGlobalMergePass(Registry);
+  initializeIndirectBrExpandPassPass(Registry);
+  initializeInterleavedLoadCombinePass(Registry);
+  initializeInterleavedAccessPass(Registry);
+  initializeEntryExitInstrumenterPass(Registry);
+  initializePostInlineEntryExitInstrumenterPass(Registry);
+  initializeUnreachableBlockElimLegacyPassPass(Registry);
+  initializeExpandReductionsPass(Registry);
+  initializeWasmEHPreparePass(Registry);
+  initializeWriteBitcodePassPass(Registry);
 
   // Load the input module...
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context,
@@ -340,7 +374,11 @@ int main(int argc, char** argv) {
   FuncPasses->add(new ElimAllocaStoreLoad());
   FuncPasses->add(new UninlineInstruction());
   FuncPasses->add(new CombineGEP());
-  // FuncPasses->add(new ElimIdenticalInstrs());
+  FuncPasses->add(new ElimIdenticalInstrs());
+
+  AddStandardLinkPasses(ModulePasses);
+
+  // Related problem: https://lists.llvm.org/pipermail/llvm-dev/2019-March/131346.html
 
   // Run module passes
   ModulePasses.run(*M);
