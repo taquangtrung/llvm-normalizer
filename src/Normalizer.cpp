@@ -320,12 +320,13 @@ int main(int argc, char** argv) {
   ModulePasses.add(new InlineSimpleFunction());
   ModulePasses.add(new ElimUnusedGlobal());
 
-  // FuncPasses->add(new ElimAllocaStoreLoad());
-  // FuncPasses->add(new UninlineInstruction());
-  // FuncPasses->add(new CombineGEP());
-  // // FuncPasses->add(new ElimIdenticalInstrs());
+  FuncPasses->add(new ElimAllocaStoreLoad());
+  FuncPasses->add(new UninlineInstruction());
+  FuncPasses->add(new CombineGEP());
+  FuncPasses->add(new ElimIdenticalInstrs()); //
 
   AddStandardLinkPasses(ModulePasses);
+  AddStandardLinkPasses(FuncPasses);
 
   // Related problem: https://lists.llvm.org/pipermail/llvm-dev/2019-March/131346.html
 
@@ -333,12 +334,12 @@ int main(int argc, char** argv) {
   ModulePasses.run(*M);
 
   // Run function passes
-  // FuncPasses->doInitialization();
-  // for (Function &F: *M) {
-  //   debug () << "Run function passes on: " << F.getName() << "\n";
-  //   FuncPasses->run(F);
-  // }
-  // FuncPasses->doFinalization();
+  FuncPasses->doInitialization();
+  for (Function &F: *M) {
+    debug () << "Run function passes on: " << F.getName() << "\n";
+    FuncPasses->run(F);
+  }
+  FuncPasses->doFinalization();
 
   return 0;
 }

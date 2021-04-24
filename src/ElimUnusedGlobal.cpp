@@ -10,7 +10,9 @@ bool ElimUnusedGlobal::runOnModule(Module &M) {
           << "Eliminating Unused Global Variables...\n";
 
   for (Function &F: M) {
+    debug() << "Function: " << F.getName() << "\n";
     DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+    debug() << "  DT Root: " << DT.getRoot()->getName() << "\n";
   }
 
   GlobalVariableList &globalList = M.getGlobalList();
