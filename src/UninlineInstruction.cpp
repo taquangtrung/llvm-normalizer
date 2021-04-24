@@ -74,12 +74,10 @@ bool UninlineInstruction::normalizeFunction(Function &F) {
 }
 
 static RegisterPass<UninlineInstruction> X("UninlineInstruction",
-                                           "Normalize ConstantExpr",
-                                           false /* Only looks at CFG */,
-                                           false /* Analysis Pass */);
+    "UninlineInstruction",
+    false /* Only looks at CFG */,
+    false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-                                [](const PassManagerBuilder &Builder,
-                                   legacy::PassManagerBase &PM) {
-                                  PM.add(new UninlineInstruction());
-                                });
+    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
+      PM.add(new UninlineInstruction());});

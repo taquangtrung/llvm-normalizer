@@ -10,6 +10,8 @@
 
 #include "llvm/Analysis/InlineCost.h"
 
+#include "llvm/Analysis/PostDominators.h"
+
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
@@ -31,6 +33,10 @@ struct ElimUnusedGlobal : public ModulePass {
   static bool normalizeModule(Module &M);
 
   ElimUnusedGlobal() : ModulePass(ID) {}
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<DominatorTreeWrapperPass>();
+  }
 
   virtual bool runOnModule(Module &M) override;
 };

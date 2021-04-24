@@ -20,9 +20,6 @@
 
 // #include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
 
-// #include "cxxopts/cxxopts.hpp"
-#include "cxxopts/cxxopts.hpp"
-
 #include "Debug.h"
 #include "InitGlobal.h"
 #include "UninlineInstruction.h"
@@ -43,58 +40,6 @@ typedef struct Arguments {
   bool normalizeAll;
   string inlineFunction;
 } Arguments;
-
-Arguments parseArguments(int argc, char** argv) {
-  Arguments args;
-
-  // Parse arguments
-  cxxopts::Options options("normalizer", "Options of normalizer");
-  options.add_options()
-    ("input", "Input file", cxxopts::value<std::string>())
-    ("o", "Output file", cxxopts::value<std::string>())
-    ("output", "Output file", cxxopts::value<std::string>())
-    ("debug", "Enable debugging")
-    ("inline-function", "Inline specific function", cxxopts::value<std::string>())
-    ("pip", "Print input program")
-    ("pop", "Print output program")
-    ("help", "Help");
-
-  // normalize all by default
-  args.normalizeAll = true;
-
-  // parse arguments by positional and flags
-  options.parse_positional({"input"});
-  auto parsedOptions = options.parse(argc, argv);
-
-  // get input file
-  args.inputFile = parsedOptions["input"].as<std::string>();
-  if (args.inputFile.empty()) {
-    cerr << "Input file not found";
-    exit(1);
-  }
-  cout << "Input File: " << args.inputFile << std::endl;
-
-  // get output file
-  if (parsedOptions.count("output")) {
-    args.outputFile = parsedOptions["output"].as<std::string>();
-    cout << "Output File: " << args.outputFile << std::endl;
-  }
-
-  // get inlining function
-  if (parsedOptions.count("inline-function")) {
-    args.normalizeAll = false;
-    args.inlineFunction = parsedOptions["inline-function"].as<std::string>();
-    cout << "Function to be inline: " << args.inlineFunction << std::endl;
-  }
-
-
-  // get some debugging flags
-  debugging = parsedOptions["debug"].as<bool>();
-  printInputProgram = parsedOptions["pip"].as<bool>();
-  printOutputProgram = parsedOptions["pop"].as<bool>();
-
-  return args;
-}
 
 static cl::opt<bool> DebugifyEach(
     "debugify-each",
@@ -163,100 +108,100 @@ void normalizeModule(Module& M) {
 }
 
 
-int main_old(int argc, char** argv) {
-  cout << "LLVM Normalizer for Discover" << std::endl;
+// int main_old(int argc, char** argv) {
+//   cout << "LLVM Normalizer for Discover" << std::endl;
 
-  Arguments args = parseArguments(argc, argv);
-  string inputFile = args.inputFile;
-  string outputFile = args.outputFile;
+//   Arguments args = parseArguments(argc, argv);
+//   string inputFile = args.inputFile;
+//   string outputFile = args.outputFile;
 
-  // process bitcode
-  SMDiagnostic err;
-  static LLVMContext context;
+//   // process bitcode
+//   SMDiagnostic err;
+//   static LLVMContext context;
 
-  std::unique_ptr<Module> M = parseIRFile(inputFile, err, context);
+//   std::unique_ptr<Module> M = parseIRFile(inputFile, err, context);
 
-  if (printInputProgram) {
-    debug() << "===============================\n"
-            << "BEFORE NORMALIZATION:\n";
-    M->print(debug(), nullptr);
-  }
+//   if (printInputProgram) {
+//     debug() << "===============================\n"
+//             << "BEFORE NORMALIZATION:\n";
+//     M->print(debug(), nullptr);
+//   }
 
-  // legacy::PassManager GPM;
-  // GPM.add(new InitGlobal());
+//   // legacy::PassManager GPM;
+//   // GPM.add(new InitGlobal());
 
-  // legacy::PassManager FPM;
-  // FPM.add(new DominatorTreeWrapperPass());
-  // FPM.add(new UninlineInstruction);
-  // FPM.add(new CombineGEP());
-  // FPM.add(new ElimIdenticalInstrs());
-  // FPM.add(new ElimAllocaStoreLoad());
+//   // legacy::PassManager FPM;
+//   // FPM.add(new DominatorTreeWrapperPass());
+//   // FPM.add(new UninlineInstruction);
+//   // FPM.add(new CombineGEP());
+//   // FPM.add(new ElimIdenticalInstrs());
+//   // FPM.add(new ElimAllocaStoreLoad());
 
-  // legacy::PassManager MPM;
-  // MPM.add(new InitGlobal());
-  // MPM.add(new ElimUnusedAuxFunction());
-  // MPM.add(new InlineSimpleFunction());
-  // MPM.add(new ElimUnusedGlobal());
+//   // legacy::PassManager MPM;
+//   // MPM.add(new InitGlobal());
+//   // MPM.add(new ElimUnusedAuxFunction());
+//   // MPM.add(new InlineSimpleFunction());
+//   // MPM.add(new ElimUnusedGlobal());
 
 
-  // Normalize all
-  if (args.normalizeAll) {
-    // Normalize globals first
-    normalizeGlobal(*M);
-    // GPM.run(*M);
+//   // Normalize all
+//   if (args.normalizeAll) {
+//     // Normalize globals first
+//     normalizeGlobal(*M);
+//     // GPM.run(*M);
 
-    // Run each FunctionPass
-    FunctionList &FS = M->getFunctionList();
-    for (Function &F: FS) {
-      normalizeFunction(F);
-    }
-    // FPM.run(*M);
+//     // Run each FunctionPass
+//     FunctionList &FS = M->getFunctionList();
+//     for (Function &F: FS) {
+//       normalizeFunction(F);
+//     }
+//     // FPM.run(*M);
 
-    // Run ModulePass
-    normalizeModule(*M);
-    // MPM.run(*M);
-  }
-  else {
-    if (!args.inlineFunction.empty()) {
-      string &inlineFuncs = args.inlineFunction;
+//     // Run ModulePass
+//     normalizeModule(*M);
+//     // MPM.run(*M);
+//   }
+//   else {
+//     if (!args.inlineFunction.empty()) {
+//       string &inlineFuncs = args.inlineFunction;
 
-      vector<string> funcNames;
-      size_t pos;
-      while ((pos = inlineFuncs.find("|")) != std::string::npos) {
-        funcNames.push_back(inlineFuncs.substr(0, pos));
-        inlineFuncs.erase(0, pos + 1);
-      }
-      if (!inlineFuncs.empty())
-        funcNames.push_back(inlineFuncs);
+//       vector<string> funcNames;
+//       size_t pos;
+//       while ((pos = inlineFuncs.find("|")) != std::string::npos) {
+//         funcNames.push_back(inlineFuncs.substr(0, pos));
+//         inlineFuncs.erase(0, pos + 1);
+//       }
+//       if (!inlineFuncs.empty())
+//         funcNames.push_back(inlineFuncs);
 
-      debug() << "<<<<<<<<<<<<<<<<<<<\n"
-              << "Inline functions: ";
+//       debug() << "<<<<<<<<<<<<<<<<<<<\n"
+//               << "Inline functions: ";
 
-      for (string funcName: funcNames) {
-        debug() << funcName << ", ";
-      }
-      debug() << "\n";
+//       for (string funcName: funcNames) {
+//         debug() << funcName << ", ";
+//       }
+//       debug() << "\n";
 
-      InlineSimpleFunction::inlineFunction(*M, funcNames);
-    }
-  }
+//       InlineSimpleFunction::inlineFunction(*M, funcNames);
+//     }
+//   }
 
-  if (printOutputProgram) {
-    debug() << "===============================\n"
-            << "AFTER NORMALIZATION:\n";
-    M->print(debug(), nullptr);
-  }
+//   if (printOutputProgram) {
+//     debug() << "===============================\n"
+//             << "AFTER NORMALIZATION:\n";
+//     M->print(debug(), nullptr);
+//   }
 
-  // write output
-  if (!outputFile.empty()) {
-    std::error_code EC;
-    raw_fd_ostream OS(outputFile, EC, llvm::sys::fs::F_None);
-    WriteBitcodeToFile(*M, OS);
-    OS.flush();
-  }
+//   // write output
+//   if (!outputFile.empty()) {
+//     std::error_code EC;
+//     raw_fd_ostream OS(outputFile, EC, llvm::sys::fs::F_None);
+//     WriteBitcodeToFile(*M, OS);
+//     OS.flush();
+//   }
 
-  return 0;
-}
+//   return 0;
+// }
 
 // Declare command line options
 
@@ -371,10 +316,14 @@ int main(int argc, char** argv) {
   ModulePasses.add(new PostDominatorTreeWrapperPass());
 
   // add normalization passes for Discover
-  FuncPasses->add(new ElimAllocaStoreLoad());
-  FuncPasses->add(new UninlineInstruction());
-  FuncPasses->add(new CombineGEP());
-  FuncPasses->add(new ElimIdenticalInstrs());
+  ModulePasses.add(new ElimUnusedAuxFunction());
+  ModulePasses.add(new InlineSimpleFunction());
+  ModulePasses.add(new ElimUnusedGlobal());
+
+  // FuncPasses->add(new ElimAllocaStoreLoad());
+  // FuncPasses->add(new UninlineInstruction());
+  // FuncPasses->add(new CombineGEP());
+  // // FuncPasses->add(new ElimIdenticalInstrs());
 
   AddStandardLinkPasses(ModulePasses);
 
@@ -384,12 +333,12 @@ int main(int argc, char** argv) {
   ModulePasses.run(*M);
 
   // Run function passes
-  FuncPasses->doInitialization();
-  for (Function &F: *M) {
-    debug () << "Run function passes on: " << F.getName() << "\n";
-    FuncPasses->run(F);
-  }
-  FuncPasses->doFinalization();
+  // FuncPasses->doInitialization();
+  // for (Function &F: *M) {
+  //   debug () << "Run function passes on: " << F.getName() << "\n";
+  //   FuncPasses->run(F);
+  // }
+  // FuncPasses->doFinalization();
 
   return 0;
 }

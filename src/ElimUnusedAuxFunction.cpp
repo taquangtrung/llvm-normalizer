@@ -43,12 +43,10 @@ bool ElimUnusedAuxFunction::normalizeModule(Module &M) {
 }
 
 static RegisterPass<ElimUnusedAuxFunction> X("ElimUnusedAuxFunction",
-                                      "Normalize ConstantExpr",
-                                      false /* Only looks at CFG */,
-                                      false /* Analysis Pass */);
+    "ElimUnusedAuxFunction",
+    false /* Only looks at CFG */,
+    false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-                                [](const PassManagerBuilder &Builder,
-                                   legacy::PassManagerBase &PM) {
-                                  PM.add(new ElimUnusedAuxFunction());
-                                });
+    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
+      PM.add(new ElimUnusedAuxFunction());});

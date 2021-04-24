@@ -9,6 +9,10 @@ bool ElimUnusedGlobal::runOnModule(Module &M) {
   debug() << "=========================================\n"
           << "Eliminating Unused Global Variables...\n";
 
+  for (Function &F: M) {
+    DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+  }
+
   GlobalVariableList &globalList = M.getGlobalList();
   SmallSetVector<GlobalVariable*, 16> removableGlobals;
 
@@ -30,12 +34,10 @@ bool ElimUnusedGlobal::normalizeModule(Module &M) {
 }
 
 static RegisterPass<ElimUnusedGlobal> X("ElimUnusedGlobal",
-                                      "Normalize ConstantExpr",
-                                      false /* Only looks at CFG */,
-                                      false /* Analysis Pass */);
+    "ElimUnusedGlobal",
+    false /* Only looks at CFG */,
+    true /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-                                [](const PassManagerBuilder &Builder,
-                                   legacy::PassManagerBase &PM) {
-                                  PM.add(new ElimUnusedGlobal());
-                                });
+    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
+      PM.add(new ElimUnusedGlobal());});
