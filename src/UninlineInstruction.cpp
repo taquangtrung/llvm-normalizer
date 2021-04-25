@@ -13,7 +13,7 @@ char UninlineInstruction::ID = 0;
 /*
  * Un-inline ConstExpr in instructions, recursively
  */
-void uninlineConstExpr(IRBuilder<> builder, Instruction *instr) {
+void uninlineConstExpr(IRBuilder<> *builder, Instruction *instr) {
 
   // transform ConstantExpr in operands into new instructions
   for (int i = 0; i < instr->getNumOperands(); i++) {
@@ -31,14 +31,14 @@ void uninlineConstExpr(IRBuilder<> builder, Instruction *instr) {
         // the current PHINode is always at the beginning of this block
         BasicBlock* incomingBlock = phiInstr->getIncomingBlock(i);
         Instruction* terminator = incomingBlock->getTerminator();
-        builder.SetInsertPoint(terminator);
+        builder->SetInsertPoint(terminator);
       }
       else {
         // set the insertion point in this block
-        builder.SetInsertPoint(instr);
+        builder->SetInsertPoint(instr);
       }
 
-      builder.Insert(exprInstr);
+      builder->Insert(exprInstr);
       instr->setOperand(i, exprInstr);
 
       uninlineConstExpr(builder, exprInstr);
@@ -54,7 +54,7 @@ bool UninlineInstruction::runOnFunction(Function &F) {
     IRBuilder<> builder(&B);
 
     for (Instruction &I: B){
-      uninlineConstExpr(builder, &I);
+      uninlineConstExpr(&builder, &I);
     }
   }
 

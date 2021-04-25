@@ -11,6 +11,7 @@ A LLVM bitcode normalizer to support the Discover analyzer
 
   ```
   sudo apt-get install libdw-dev libelf-dev libdwarf-dev
+
   ```
 
 ## This tool:
@@ -29,7 +30,7 @@ A LLVM bitcode normalizer to support the Discover analyzer
     part).
 
 
-- update 
+- update
  + Add the llvm bin path to PATH
  + Eg: Add export PATH="/usr/local/opt/llvm/bin:$PATH" in  ~/.bash_profile
 

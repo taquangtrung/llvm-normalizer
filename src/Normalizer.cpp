@@ -88,9 +88,9 @@ public:
 };
 
 
-void normalizeGlobal(Module& M) {
-  InitGlobal::normalizeModule(M);
-}
+// void normalizeGlobal(Module& M) {
+//   InitGlobal::normalizeModule(M);
+// }
 
 
 void normalizeFunction(Function& F) {
@@ -417,6 +417,7 @@ int main(int argc, char** argv) {
   // ModulePasses.addPass(createModuleToFunctionPassAdaptor(PostDominatorTreeWrapperPass()));
 
   // // add normalization passes for Discover
+  // ModulePasses.add(new InitGlobal());
   // ModulePasses.add(new ElimUnusedAuxFunction());
   // ModulePasses.add(new InlineSimpleFunction());
   // ModulePasses.add(new ElimUnusedGlobal());

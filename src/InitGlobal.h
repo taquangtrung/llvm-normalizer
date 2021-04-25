@@ -22,23 +22,6 @@ namespace discover {
 
 struct InitGlobal : public ModulePass {
   static char ID;
-  static bool normalizeModule(Module &M);
-
-  void uninlineAggregateInitValue(LLVMContext &ctx,
-                                  IRBuilder<> builder,
-                                  GlobalVariable *global,
-                                  std::vector<Value*> gepIdxs,
-                                  Constant* initValue);
-
-  void uninlinePointerInitValue(LLVMContext &ctx,
-                                IRBuilder<> builder,
-                                GlobalVariable *global,
-                                Constant* initValue,
-                                PointerType* initType);
-
-  void invokeGlobalInitFunctions(IRBuilder<> builder,
-                                 GlobalVariable *global,
-                                 Constant* initValue);
 
   InitGlobal() : ModulePass(ID) {}
 
