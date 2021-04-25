@@ -225,10 +225,6 @@ static cl::opt<bool> VerifyEach("verify-each",
 static cl::opt<bool> DisableInline("disable-inlining",
     cl::desc("Do not run the inliner pass"));
 
-static cl::opt<std::string> ClDataLayout("data-layout",
-    cl::desc("data layout string to use"),
-    cl::value_desc("layout-string"), cl::init(""));
-
 static cl::opt<bool> Debug("debug",
     cl::desc("Enable debugging"),
     cl::cat(DiscoverNormalizerCategory));
@@ -405,15 +401,15 @@ int main(int argc, char** argv) {
   initializeWasmEHPreparePass(Registry);
   initializeWriteBitcodePassPass(Registry);
 
-  // Load the input module...
-  // std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context, ClDataLayout);
+  // Load the input module
+  std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context);
 
-  // ModulePassManager ModulePasses;
-  // std::unique_ptr<legacy::FunctionPassManager> FuncPasses;
-  // FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
+  ModulePassManager ModulePasses;
+  std::unique_ptr<legacy::FunctionPassManager> FuncPasses;
+  FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
 
   // // add dependent passes from LLVM
-  // ModulePasses.addPass(createModuleToFunctionPassAdaptor(DominatorTreeWrapperPass()));
+  ModulePasses.addPass(DominatorTreeWrapperPass());
   // ModulePasses.addPass(createModuleToFunctionPassAdaptor(PostDominatorTreeWrapperPass()));
 
   // // add normalization passes for Discover
