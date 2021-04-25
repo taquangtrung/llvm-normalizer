@@ -91,17 +91,17 @@ bool InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
   StringRef funcName = F->getName();
   llvm::InlineFunctionInfo IFI;
 
-  SmallSetVector<CallSite, 16> Calls;
+  SmallSetVector<CallBase*, 16> Calls;
   for (User *U : F->users())
-    if (auto CS = CallSite(U))
-      if (CS.getCalledFunction() == F)
-        Calls.insert(CS);
+    if (auto CB = dyn_cast<CallBase>(U))
+      if (CB->getCalledFunction() == F)
+        Calls.insert(CB);
 
   bool successful = true;
 
-  for (CallSite CS : Calls) {
-    InlineResult res = llvm::InlineFunction(CS, IFI);
-    successful = successful && res;
+  for (CallBase* CB : Calls) {
+    InlineResult res = llvm::InlineFunction(*CB, IFI);
+    successful = successful && res.isSuccess();
   }
 
   if (successful) {
@@ -123,6 +123,9 @@ bool InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
 }
 
 bool InlineSimpleFunction::runOnModule(Module &M) {
+  debug() << "\n=========================================\n"
+          << "Inlining Internal Functions...\n";
+
   FunctionSet attemptedFuncs = FunctionSet();
 
   while (true) {
@@ -163,14 +166,6 @@ bool InlineSimpleFunction::inlineFunction(Module &M, vector<string> funcNames) {
   }
 
   return true;
-}
-
-bool InlineSimpleFunction::normalizeModule(Module &M) {
-  debug() << "\n=========================================\n"
-          << "Inlining Internal Functions...\n";
-
-  InlineSimpleFunction pass;
-  return pass.runOnModule(M);
 }
 
 static RegisterPass<InlineSimpleFunction> X("InlineSimpleFunction",

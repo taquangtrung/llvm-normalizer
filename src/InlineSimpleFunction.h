@@ -5,7 +5,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/CallSite.h"
+#include "llvm/IR/AbstractCallSite.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/Dominators.h"
 
@@ -29,7 +29,6 @@ namespace discover {
 
 struct InlineSimpleFunction : public ModulePass {
   static char ID;
-  static bool normalizeModule(Module &M);
   static bool inlineFunction(Module &M, vector<string> funcNames);
 
   void setInlineableFunctions(Module &M);

@@ -30,11 +30,6 @@ bool ElimUnusedGlobal::runOnModule(Module &M) {
   return true;
 }
 
-bool ElimUnusedGlobal::normalizeModule(Module &M) {
-  ElimUnusedGlobal pass;
-  return pass.runOnModule(M);
-}
-
 static RegisterPass<ElimUnusedGlobal> X("ElimUnusedGlobal",
     "ElimUnusedGlobal",
     false /* Only looks at CFG */,

@@ -5,7 +5,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Verifier.h"
 
 #include "llvm/Analysis/InlineCost.h"

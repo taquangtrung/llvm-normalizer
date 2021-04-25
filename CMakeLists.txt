@@ -31,7 +31,7 @@ set(
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
 # Set LLVM version
-set(LLVM_VERSION 10)
+set(LLVM_VERSION 11)
 message (STATUS "Looking for LLVM ${LLVM_VERSION}")
 
 # Set LLVM preferred path
@@ -68,16 +68,17 @@ link_directories(${LLVM_LIBRARY_DIRS})
 
 # Link LLVM libraries
 link_libraries()
-execute_process(COMMAND llvm-config --libs OUTPUT_VARIABLE LLVM_LIBS)
-execute_process(COMMAND llvm-config --system-libs OUTPUT_VARIABLE LLVM_SYS_LIBS)
-execute_process(COMMAND llvm-config --ldflags OUTPUT_VARIABLE LLVM_LDF)
-string(STRIP ${LLVM_LIBS} LLVM_LIBS)
-string(STRIP ${LLVM_SYS_LIBS} LLVM_SYS_LIBS)
-string(STRIP ${LLVM_LDF} LLVM_LDF)
-message(STATUS "Using LLVM libraries: ${LLVM_LIBS}")
-message(STATUS "Using system libraries: ${LLVM_SYSTEM_LIBS}")
-message(STATUS "Using linker flags: ${LLVM_LDF}")
-link_libraries(${LLVM_LIBS} ${LLVM_SYS_LIBS} ${LLVM_LDF})
+# execute_process(COMMAND llvm-config --libs OUTPUT_VARIABLE LLVM_LIBS)
+# execute_process(COMMAND llvm-config --system-libs OUTPUT_VARIABLE LLVM_SYS_LIBS)
+# execute_process(COMMAND llvm-config --ldflags OUTPUT_VARIABLE LLVM_LDF)
+# string(STRIP ${LLVM_LIBS} LLVM_LIBS)
+# string(STRIP ${LLVM_SYS_LIBS} LLVM_SYS_LIBS)
+# string(STRIP ${LLVM_LDF} LLVM_LDF)
+# message(STATUS "Using LLVM libraries: ${LLVM_LIBS}")
+# message(STATUS "Using system libraries: ${LLVM_SYSTEM_LIBS}")
+# message(STATUS "Using linker flags: ${LLVM_LDF}")
+# link_libraries(${LLVM_LIBS} ${LLVM_SYS_LIBS} ${LLVM_LDF})
+link_libraries(${LLVM_AVAILABLE_LIBS})
 
 # Setting for third-party libraries
 set(EXTRA_LIB_DIRS "${CMAKE_CURRENT_LIST_DIR}/lib")
