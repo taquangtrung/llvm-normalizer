@@ -50,6 +50,10 @@ void uninlineConstExpr(IRBuilder<> *builder, Instruction *instr) {
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool UninlineInstruction::runOnFunction(Function &F) {
+  debug() << "=========================================\n"
+          << "Running Pass: Uninline Instructions: "
+          << F.getName() << "\n";
+
   for (BasicBlock &B: F.getBasicBlockList()){
     IRBuilder<> builder(&B);
 
@@ -61,18 +65,6 @@ bool UninlineInstruction::runOnFunction(Function &F) {
   return true;
 }
 
-/*
- * Static function, used by this normalizer
- */
-bool UninlineInstruction::normalizeFunction(Function &F) {
-  debug() << "\n=========================================\n"
-          << "Uninlining Instructions in function: "
-          << F.getName() << "\n";
-
-  UninlineInstruction pass;
-  return pass.runOnFunction(F);
-}
-
 static RegisterPass<UninlineInstruction> X("UninlineInstruction",
     "UninlineInstruction",
     false /* Only looks at CFG */,
@@ -80,4 +72,5 @@ static RegisterPass<UninlineInstruction> X("UninlineInstruction",
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
     [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
-      PM.add(new UninlineInstruction());});
+      PM.add(new UninlineInstruction());
+    });

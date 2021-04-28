@@ -22,7 +22,6 @@ namespace discover {
 
 struct ElimAllocaStoreLoad : public FunctionPass {
   static char ID;
-  static bool normalizeFunction(Function &F);
 
   ElimAllocaStoreLoad() : FunctionPass(ID) {}
 

@@ -27,7 +27,6 @@ namespace discover {
 
 struct ElimIdenticalInstrs : public FunctionPass {
   static char ID;
-  static bool normalizeFunction(Function &F);
 
   void getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequired<DominatorTreeWrapperPass>();

@@ -87,7 +87,7 @@ message(STATUS "Found extra libraries at: ${EXTRA_LIB_DIRS}")
 
 # # Backward debugging is available only in Linux
 # if(LINUX)
-#   add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
 # endif()
 
 # Now adding source code
