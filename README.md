@@ -10,7 +10,11 @@ A LLVM bitcode normalizer to support the Discover analyzer
 - For backward-cpp:
 
   ```
-  sudo apt-get install libdw-dev libelf-dev libdwarf-dev
+  # install LLVM and Clang 11 (or the suitable version)
+  sudo apt-get install llvm-11-dev clang-11 libclang-11-dev
+
+  # install other libraries
+  sudo apt-get install libedit-dev
 
   ```
 
