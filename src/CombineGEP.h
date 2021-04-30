@@ -24,7 +24,6 @@ namespace discover {
 
 struct CombineGEP : public FunctionPass {
   static char ID;
-  static bool normalizeFunction(Function &F);
 
   CombineGEP() : FunctionPass(ID) {}
 

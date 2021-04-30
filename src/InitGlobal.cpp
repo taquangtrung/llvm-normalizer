@@ -148,8 +148,8 @@ void invokeGlobalInitFunctions(IRBuilder<> *builder, GlobalVariable *global,
 }
 
 bool InitGlobal::runOnModule(Module &M) {
-  debug() << "\n=========================================\n"
-          << "Init Globals ...\n";
+  debug() << "=========================================\n"
+          << "Running Pass: Initialize Global Variables\n";
 
   GlobalVariableList &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();

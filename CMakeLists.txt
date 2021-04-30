@@ -17,11 +17,11 @@ if(UNIX AND NOT APPLE)
   set(LINUX TRUE)
 endif()
 
-# # Backward debugging trace is supported only in Linux
+# Backward debugging trace is supported only in Linux
 # if(LINUX)
-#   set(CMAKE_BUILD_TYPE Debug)
-#   set(CMAKE_BUILD_TYPE RelWithDebInfo)
-#   set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")
+  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+  set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")
 # endif()
 
 # Set cmake dirs
@@ -87,7 +87,7 @@ message(STATUS "Found extra libraries at: ${EXTRA_LIB_DIRS}")
 
 # # Backward debugging is available only in Linux
 # if(LINUX)
-#   add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
 # endif()
 
 # Now adding source code

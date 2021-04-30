@@ -7,7 +7,7 @@ char ElimUnusedGlobal::ID = 0;
 
 bool ElimUnusedGlobal::runOnModule(Module &M) {
   debug() << "=========================================\n"
-          << "Eliminating Unused Global Variables...\n";
+          << "Running Pass: Eliminating Unused Global Variables\n";
 
   for (Function &F: M) {
     debug() << "Function: " << F.getName() << "\n";

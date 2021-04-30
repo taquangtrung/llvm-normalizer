@@ -99,27 +99,20 @@ std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
 }
 
 bool ElimAllocaStoreLoad::runOnFunction(Function &F) {
+  debug() << "=========================================\n"
+          << "Running Pass: Eliminate Alloca/Store/Load Instructions: "
+          << F.getName() << "\n";
   std::vector<AllocaStoreLoads> instrTupleList = findRemovableAllocaStoreLoad(F);
   removeAllocaStoreLoad(F, instrTupleList);
   return true;
 }
 
-bool ElimAllocaStoreLoad::normalizeFunction(Function &F) {
-  debug() << "\n=========================================\n"
-          << "Eliminate AllocaStoreLoads in function: "
-          << F.getName() << "\n";
-
-  ElimAllocaStoreLoad pass;
-  return pass.runOnFunction(F);
-}
-
 static RegisterPass<ElimAllocaStoreLoad> X("ElimAllocaStoreLoad",
-                                           "ElimAllocaStoreLoad Pass",
-                                           false /* Only looks at CFG */,
-                                           false /* Analysis Pass */);
+    "ElimAllocaStoreLoad Pass",
+    false /* Only looks at CFG */,
+    false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-                                [](const PassManagerBuilder &Builder,
-                                   legacy::PassManagerBase &PM) {
-                                  PM.add(new ElimAllocaStoreLoad());
-                                });
+    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
+      PM.add(new ElimAllocaStoreLoad());
+    });

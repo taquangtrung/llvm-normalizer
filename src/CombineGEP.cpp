@@ -129,21 +129,13 @@ std::vector<GEPInstList> findCombinableGEPList(Function &F) {
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool CombineGEP::runOnFunction(Function &F) {
+  debug() << "=========================================\n"
+          << "Running Pass: Combine GetElemPtr Instructions: "
+          << F.getName() << "\n";
+
   std::vector<GEPInstList> allGEPList = findCombinableGEPList(F);
   combineGEPInstructions(F, allGEPList);
   return true;
-}
-
-/*
- * Static function, used by this normalizer
- */
-bool CombineGEP::normalizeFunction(Function &F) {
-  debug() << "\n=========================================\n"
-          << "Combining GEP Instruction in function: "
-          << F.getName() << "\n";
-
-  CombineGEP pass;
-  return pass.runOnFunction(F);
 }
 
 static RegisterPass<CombineGEP> X("CombineGEP",

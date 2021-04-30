@@ -206,6 +206,10 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
+  debug() << "=========================================\n"
+          << "Running Pass: Eliminate Identical Instructions: "
+          << F.getName() << "\n";
+
   DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
   // DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
   // DominatorTree DT;
@@ -226,46 +230,12 @@ bool ElimIdenticalInstrs::runOnFunction(Function &F) {
   return true;
 }
 
-/*
- * Static function, used by this normalizer
- */
-bool ElimIdenticalInstrs::normalizeFunction(Function &F) {
-  debug() << "\n=========================================\n"
-          << "Eliminate Common Instruction in function: "
-          << F.getName() << "\n";
-
-  // // DominatorTree &DT = MP.getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-  // // DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
-  // llvm::DominatorTree DT{F};
-  // // DominatorTree DT;
-
-  // // find and eliminate identical CastInst
-  // IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
-  // eliminateIdenticalInstrs(F, DT, identCastList);
-
-  // // find and eliminate identical PHINode
-  // IdentInstsList identPHIList = findPHINodeOfSameIncoming(F);
-  // eliminateIdenticalInstrs(F, DT, identPHIList);
-
-  // // find and eliminate identical GetElementPtrInst
-  // IdentInstsList identGEPList = findGEPOfSameElemPtr(F);
-  // eliminateIdenticalInstrs(F, DT, identGEPList);
-
-  ElimIdenticalInstrs pass;
-
-  // // FunctionAnalysisManager FAM;
-  // // return pass.run(F, FAM);
-
-  return pass.runOnFunction(F);
-}
-
 static RegisterPass<ElimIdenticalInstrs> X("ElimIdenticalInstrs",
-                                     "ElimIdenticalInstrs",
-                                     false /* Only looks at CFG */,
-                                     false /* Analysis Pass */);
+    "ElimIdenticalInstrs",
+    false /* Only looks at CFG */,
+    true /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-                                [](const PassManagerBuilder &Builder,
-                                   legacy::PassManagerBase &PM) {
-                                  PM.add(new ElimIdenticalInstrs());
-                                });
+    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
+      PM.add(new ElimIdenticalInstrs());
+    });

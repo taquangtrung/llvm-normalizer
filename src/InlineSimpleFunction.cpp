@@ -123,8 +123,8 @@ bool InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
 }
 
 bool InlineSimpleFunction::runOnModule(Module &M) {
-  debug() << "\n=========================================\n"
-          << "Inlining Internal Functions...\n";
+  debug() << "=========================================\n"
+          << "Running Pass: Inline Simple Functions\n";
 
   FunctionSet attemptedFuncs = FunctionSet();
 
