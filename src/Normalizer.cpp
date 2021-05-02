@@ -251,8 +251,6 @@ int main(int argc, char** argv) {
   cl::HideUnrelatedOptions(DiscoverNormalizerCategory);
   cl::ParseCommandLineOptions(argc, argv, "LLVM Discover Normalizer!\n");
 
-  llvm::EnablePrettyStackTrace();
-
   //
   debugging = Debug;
 
@@ -303,7 +301,7 @@ int main(int argc, char** argv) {
   initializeWasmEHPreparePass(Registry);
   initializeWriteBitcodePassPass(Registry);
 
-  initializeDominatorTreeWrapperPassPass(Registry);
+  // initializeDominatorTreeWrapperPassPass(Registry);
 
   // Load the input module...
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context);
@@ -328,7 +326,7 @@ int main(int argc, char** argv) {
   FuncPasses->add(new ElimIdenticalInstrs()); //
 
   AddStandardLinkPasses(ModulePasses);
-  AddStandardLinkPasses(*FuncPasses);
+  // AddStandardLinkPasses(*FuncPasses);
 
   // Related problem: https://lists.llvm.org/pipermail/llvm-dev/2019-March/131346.html
 
@@ -445,4 +443,11 @@ int main(int argc, char** argv) {
 //   // FuncPasses->doFinalization();
 
 //   return 0;
+// }
+
+
+// int main(int argc, char** argv) {
+//   int *x;
+//   int y = *x;
+//   return y;
 // }

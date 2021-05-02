@@ -20,7 +20,7 @@ endif()
 # Backward debugging trace is supported only in Linux
 # if(LINUX)
   set(CMAKE_BUILD_TYPE Debug)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+  # set(CMAKE_BUILD_TYPE RelWithDebInfo)
   set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")
 # endif()
 
