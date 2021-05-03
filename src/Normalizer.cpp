@@ -301,7 +301,11 @@ int main(int argc, char** argv) {
   initializeWasmEHPreparePass(Registry);
   initializeWriteBitcodePassPass(Registry);
 
-  // initializeDominatorTreeWrapperPassPass(Registry);
+  initializeDominatorTreeWrapperPassPass(Registry);
+  initializePostDominatorTreeWrapperPassPass(Registry);
+
+
+  // initializeElimIdenticalInstrsPass(Registry);
 
   // Load the input module...
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context);
@@ -320,6 +324,7 @@ int main(int argc, char** argv) {
   ModulePasses.add(new InlineSimpleFunction());
   ModulePasses.add(new ElimUnusedGlobal());
 
+  FuncPasses->add(new DominatorTreeWrapperPass());
   FuncPasses->add(new ElimAllocaStoreLoad());
   FuncPasses->add(new UninlineInstruction());
   FuncPasses->add(new CombineGEP());
@@ -330,11 +335,12 @@ int main(int argc, char** argv) {
 
   // Related problem: https://lists.llvm.org/pipermail/llvm-dev/2019-March/131346.html
 
+  // FuncPasses->doInitialization();
+
   // Run module passes
   ModulePasses.run(*M);
 
   // Run function passes
-  FuncPasses->doInitialization();
   for (Function &F: *M) {
     FuncPasses->run(F);
   }

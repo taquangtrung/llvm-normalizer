@@ -27,12 +27,18 @@ namespace discover {
 
 struct ElimIdenticalInstrs : public FunctionPass {
   static char ID;
+  ElimIdenticalInstrs() : FunctionPass(ID) {}
 
-  void getAnalysisUsage(AnalysisUsage &AU) const {
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    debug() << "ElimIdenticalInstrs: Add Pass: DominatorTreeWrapperPass\n";
+    FunctionPass::getAnalysisUsage(AU);
     AU.addRequired<DominatorTreeWrapperPass>();
   }
 
-  ElimIdenticalInstrs() : FunctionPass(ID) {}
+  void releaseMemory() override {
+    debug() << "ElimIdenticalInstrs: Remove Pass: DominatorTreeWrapperPass\n";
+  }
+
   virtual bool runOnFunction(Function &F) override;
 };
 

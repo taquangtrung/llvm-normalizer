@@ -239,3 +239,9 @@ static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
     [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
       PM.add(new ElimIdenticalInstrs());
     });
+
+// INITIALIZE_PASS_BEGIN(ElimIdenticalInstrs, "pass", "ElimIdenticalInstrs", false, false)
+// INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+// INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
+// INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
+// INITIALIZE_PASS_END(ElimIdenticalInstrs, "pass", "ElimIdenticalInstrs", false, false)
