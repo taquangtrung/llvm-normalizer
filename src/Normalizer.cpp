@@ -265,44 +265,44 @@ int main(int argc, char** argv) {
   InitializeAllAsmPrinters();
   InitializeAllAsmParsers();
 
-  // Initialize passes
-  PassRegistry &Registry = *PassRegistry::getPassRegistry();
-  initializeCore(Registry);
-  initializeCoroutines(Registry);
-  initializeScalarOpts(Registry);
-  initializeObjCARCOpts(Registry);
-  initializeVectorization(Registry);
-  initializeIPO(Registry);
-  initializeAnalysis(Registry);
-  initializeTransformUtils(Registry);
-  initializeInstCombine(Registry);
-  initializeAggressiveInstCombine(Registry);
-  initializeInstrumentation(Registry);
-  initializeTarget(Registry);
+  // // Initialize passes
+  // PassRegistry &Registry = *PassRegistry::getPassRegistry();
+  // initializeCore(Registry);
+  // initializeCoroutines(Registry);
+  // initializeScalarOpts(Registry);
+  // initializeObjCARCOpts(Registry);
+  // initializeVectorization(Registry);
+  // initializeIPO(Registry);
+  // initializeAnalysis(Registry);
+  // initializeTransformUtils(Registry);
+  // initializeInstCombine(Registry);
+  // initializeAggressiveInstCombine(Registry);
+  // initializeInstrumentation(Registry);
+  // initializeTarget(Registry);
 
-  initializeExpandMemCmpPassPass(Registry);
-  initializeScalarizeMaskedMemIntrinPass(Registry);
-  initializeCodeGenPreparePass(Registry);
-  initializeAtomicExpandPass(Registry);
-  initializeRewriteSymbolsLegacyPassPass(Registry);
-  initializeWinEHPreparePass(Registry);
-  initializeDwarfEHPreparePass(Registry);
-  initializeSafeStackLegacyPassPass(Registry);
-  initializeSjLjEHPreparePass(Registry);
-  initializePreISelIntrinsicLoweringLegacyPassPass(Registry);
-  initializeGlobalMergePass(Registry);
-  initializeIndirectBrExpandPassPass(Registry);
-  initializeInterleavedLoadCombinePass(Registry);
-  initializeInterleavedAccessPass(Registry);
-  initializeEntryExitInstrumenterPass(Registry);
-  initializePostInlineEntryExitInstrumenterPass(Registry);
-  initializeUnreachableBlockElimLegacyPassPass(Registry);
-  initializeExpandReductionsPass(Registry);
-  initializeWasmEHPreparePass(Registry);
-  initializeWriteBitcodePassPass(Registry);
+  // initializeExpandMemCmpPassPass(Registry);
+  // initializeScalarizeMaskedMemIntrinPass(Registry);
+  // initializeCodeGenPreparePass(Registry);
+  // initializeAtomicExpandPass(Registry);
+  // initializeRewriteSymbolsLegacyPassPass(Registry);
+  // initializeWinEHPreparePass(Registry);
+  // initializeDwarfEHPreparePass(Registry);
+  // initializeSafeStackLegacyPassPass(Registry);
+  // initializeSjLjEHPreparePass(Registry);
+  // initializePreISelIntrinsicLoweringLegacyPassPass(Registry);
+  // initializeGlobalMergePass(Registry);
+  // initializeIndirectBrExpandPassPass(Registry);
+  // initializeInterleavedLoadCombinePass(Registry);
+  // initializeInterleavedAccessPass(Registry);
+  // initializeEntryExitInstrumenterPass(Registry);
+  // initializePostInlineEntryExitInstrumenterPass(Registry);
+  // initializeUnreachableBlockElimLegacyPassPass(Registry);
+  // initializeExpandReductionsPass(Registry);
+  // initializeWasmEHPreparePass(Registry);
+  // initializeWriteBitcodePassPass(Registry);
 
-  initializeDominatorTreeWrapperPassPass(Registry);
-  initializePostDominatorTreeWrapperPassPass(Registry);
+  // initializeDominatorTreeWrapperPassPass(Registry);
+  // initializePostDominatorTreeWrapperPassPass(Registry);
 
 
   // initializeElimIdenticalInstrsPass(Registry);
@@ -331,11 +331,6 @@ int main(int argc, char** argv) {
   FuncPasses->add(new ElimIdenticalInstrs()); //
 
   AddStandardLinkPasses(ModulePasses);
-  // AddStandardLinkPasses(*FuncPasses);
-
-  // Related problem: https://lists.llvm.org/pipermail/llvm-dev/2019-March/131346.html
-
-  // FuncPasses->doInitialization();
 
   // Run module passes
   ModulePasses.run(*M);
@@ -344,116 +339,6 @@ int main(int argc, char** argv) {
   for (Function &F: *M) {
     FuncPasses->run(F);
   }
-  FuncPasses->doFinalization();
 
   return 0;
 }
-
-//----------------------------------
-
-// int main(int argc, char** argv) {
-//   // cout << "LLVM Normalizer for Discover" << std::endl;
-
-//   InitLLVM X(argc, argv);
-
-//   // Parse command line options
-//   cl::HideUnrelatedOptions(DiscoverNormalizerCategory);
-//   cl::ParseCommandLineOptions(argc, argv, "LLVM Discover Normalizer!\n");
-
-//   //
-//   debugging = Debug;
-
-//   // Enable debug stream buffering.
-//   // EnableDebugBuffering = true;
-
-//   LLVMContext Context;
-//   SMDiagnostic Err;
-
-//   InitializeAllTargets();
-//   InitializeAllTargetMCs();
-//   InitializeAllAsmPrinters();
-//   InitializeAllAsmParsers();
-
-//   // Initialize passes
-//   PassRegistry &Registry = *PassRegistry::getPassRegistry();
-//   initializeCore(Registry);
-//   initializeCoroutines(Registry);
-//   initializeScalarOpts(Registry);
-//   initializeObjCARCOpts(Registry);
-//   initializeVectorization(Registry);
-//   initializeIPO(Registry);
-//   initializeAnalysis(Registry);
-//   initializeTransformUtils(Registry);
-//   initializeInstCombine(Registry);
-//   initializeAggressiveInstCombine(Registry);
-//   initializeInstrumentation(Registry);
-//   initializeTarget(Registry);
-
-//   initializeExpandMemCmpPassPass(Registry);
-//   initializeScalarizeMaskedMemIntrinPass(Registry);
-//   initializeCodeGenPreparePass(Registry);
-//   initializeAtomicExpandPass(Registry);
-//   initializeRewriteSymbolsLegacyPassPass(Registry);
-//   initializeWinEHPreparePass(Registry);
-//   initializeDwarfEHPreparePass(Registry);
-//   initializeSafeStackLegacyPassPass(Registry);
-//   initializeSjLjEHPreparePass(Registry);
-//   initializePreISelIntrinsicLoweringLegacyPassPass(Registry);
-//   initializeGlobalMergePass(Registry);
-//   initializeIndirectBrExpandPassPass(Registry);
-//   initializeInterleavedLoadCombinePass(Registry);
-//   initializeInterleavedAccessPass(Registry);
-//   initializeEntryExitInstrumenterPass(Registry);
-//   initializePostInlineEntryExitInstrumenterPass(Registry);
-//   initializeUnreachableBlockElimLegacyPassPass(Registry);
-//   initializeExpandReductionsPass(Registry);
-//   initializeWasmEHPreparePass(Registry);
-//   initializeWriteBitcodePassPass(Registry);
-
-//   // Load the input module
-//   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context);
-
-//   ModulePassManager ModulePasses;
-//   std::unique_ptr<legacy::FunctionPassManager> FuncPasses;
-//   FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
-
-//   // // add dependent passes from LLVM
-//   // ModulePasses.addPass(DominatorTreeWrapperPass());
-//   // ModulePasses.addPass(createModuleToFunctionPassAdaptor(PostDominatorTreeWrapperPass()));
-
-//   // // add normalization passes for Discover
-//   ModulePasses.addPass(InitGlobal());
-//   // ModulePasses.add(new ElimUnusedAuxFunction());
-//   // ModulePasses.add(new InlineSimpleFunction());
-//   // ModulePasses.add(new ElimUnusedGlobal());
-
-//   // FuncPasses->add(new ElimAllocaStoreLoad());
-//   // FuncPasses->add(new UninlineInstruction());
-//   // FuncPasses->add(new CombineGEP());
-//   // FuncPasses->add(new ElimIdenticalInstrs()); //
-
-//   // AddStandardLinkPasses(ModulePasses);
-//   // AddStandardLinkPasses(FuncPasses);
-
-//   // Related problem: https://lists.llvm.org/pipermail/llvm-dev/2019-March/131346.html
-
-//   // Run module passes
-//   // ModulePasses.run(Module &IR, AnalysisManager<Module> &AM)
-
-//   // Run function passes
-//   // FuncPasses->doInitialization();
-//   // for (Function &F: *M) {
-//   //   debug () << "Run function passes on: " << F.getName() << "\n";
-//   //   FuncPasses->run(F);
-//   // }
-//   // FuncPasses->doFinalization();
-
-//   return 0;
-// }
-
-
-// int main(int argc, char** argv) {
-//   int *x;
-//   int y = *x;
-//   return y;
-// }

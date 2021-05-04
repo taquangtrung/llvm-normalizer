@@ -32,12 +32,7 @@ struct ElimUnusedGlobal : public ModulePass {
   ElimUnusedGlobal() : ModulePass(ID) {}
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    debug() << "ElimUnusedGlobal: Add Pass: DominatorTreeWrapperPass\n";
     AU.addRequired<DominatorTreeWrapperPass>();
-  }
-
-  void releaseMemory() override {
-    debug() << "ElimUnusedGlobal: Remove Pass: DominatorTreeWrapperPass\n";
   }
 
   virtual bool runOnModule(Module &M) override;

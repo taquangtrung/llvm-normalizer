@@ -210,10 +210,8 @@ bool ElimIdenticalInstrs::runOnFunction(Function &F) {
           << "Running Pass: Eliminate Identical Instructions: "
           << F.getName() << "\n";
 
+  // DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-  // DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
-  // DominatorTree DT;
-  // DominatorTree DT(F);
 
   // find and eliminate identical CastInst
   IdentInstsList identCastList = findCastInstsOfSameSourceAndType(F);
@@ -239,9 +237,3 @@ static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
     [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
       PM.add(new ElimIdenticalInstrs());
     });
-
-// INITIALIZE_PASS_BEGIN(ElimIdenticalInstrs, "pass", "ElimIdenticalInstrs", false, false)
-// INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-// INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
-// INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
-// INITIALIZE_PASS_END(ElimIdenticalInstrs, "pass", "ElimIdenticalInstrs", false, false)

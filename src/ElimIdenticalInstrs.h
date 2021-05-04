@@ -30,13 +30,7 @@ struct ElimIdenticalInstrs : public FunctionPass {
   ElimIdenticalInstrs() : FunctionPass(ID) {}
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    debug() << "ElimIdenticalInstrs: Add Pass: DominatorTreeWrapperPass\n";
-    FunctionPass::getAnalysisUsage(AU);
     AU.addRequired<DominatorTreeWrapperPass>();
-  }
-
-  void releaseMemory() override {
-    debug() << "ElimIdenticalInstrs: Remove Pass: DominatorTreeWrapperPass\n";
   }
 
   virtual bool runOnFunction(Function &F) override;
