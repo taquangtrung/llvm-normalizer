@@ -90,5 +90,8 @@ message(STATUS "Found extra libraries at: ${EXTRA_LIB_DIRS}")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/backward")
 # endif()
 
+# include header files
+include_directories(include)
+
 # Now adding source code
 add_subdirectory(src)
