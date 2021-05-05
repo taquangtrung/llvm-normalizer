@@ -130,7 +130,7 @@ std::vector<GEPInstList> findCombinableGEPList(Function &F) {
  */
 bool CombineGEP::runOnFunction(Function &F) {
   debug() << "=========================================\n"
-          << "Running Pass: Combine GetElemPtr Instructions: "
+          << "Running Function Pass <Combine GetElemPtr> on: "
           << F.getName() << "\n";
 
   std::vector<GEPInstList> allGEPList = findCombinableGEPList(F);

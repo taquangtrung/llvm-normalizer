@@ -7,7 +7,7 @@ char ElimUnusedAuxFunction::ID = 0;
 
 bool ElimUnusedAuxFunction::runOnModule(Module &M) {
   debug() << "=========================================\n"
-          << "Running Pass: Eliminating Unused Auxiliary Functions\n";
+          << "Running Module Pass: Eliminating Unused Auxiliary Functions\n";
 
   FunctionList &funcList = M.getFunctionList();
 

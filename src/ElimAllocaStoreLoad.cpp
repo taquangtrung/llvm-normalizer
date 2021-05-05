@@ -100,7 +100,7 @@ std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
 
 bool ElimAllocaStoreLoad::runOnFunction(Function &F) {
   debug() << "=========================================\n"
-          << "Running Pass: Eliminate Alloca/Store/Load Instructions: "
+          << "Running Function Pass <Eliminate Alloca/Store/Load> on: "
           << F.getName() << "\n";
   std::vector<AllocaStoreLoads> instrTupleList = findRemovableAllocaStoreLoad(F);
   removeAllocaStoreLoad(F, instrTupleList);

@@ -51,7 +51,7 @@ void uninlineConstExpr(IRBuilder<> *builder, Instruction *instr) {
  */
 bool UninlineInstruction::runOnFunction(Function &F) {
   debug() << "=========================================\n"
-          << "Running Pass: Uninline Instructions: "
+          << "Running Function Pass <Uninline Instructions> on: "
           << F.getName() << "\n";
 
   for (BasicBlock &B: F.getBasicBlockList()){

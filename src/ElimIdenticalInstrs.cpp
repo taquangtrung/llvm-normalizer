@@ -207,7 +207,7 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
   debug() << "=========================================\n"
-          << "Running Function Pass: Eliminate Identical Instructions on: "
+          << "Running Function Pass <Eliminate Identical Instructions> on: "
           << F.getName() << "\n";
 
   DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
