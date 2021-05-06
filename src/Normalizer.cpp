@@ -115,13 +115,25 @@ static cl::opt<bool> DisableInline("disable-inlining",
 static cl::opt<bool> Debugging("debug", cl::desc("Enable debugging"),
     cl::cat(DiscoverNormalizerCategory));
 
-static cl::opt<bool> PrintInputProgram("--pip",
+static cl::opt<bool> PrintInputProgram("pip",
     cl::desc("Enable printing input program"),
     cl::cat(DiscoverNormalizerCategory));
 
-static cl::opt<bool> PrintOutputProgram("--pop",
+static cl::opt<bool> PrintOutputProgram("pop",
     cl::desc("Enable printing input program"),
     cl::cat(DiscoverNormalizerCategory));
+
+//------------------------------
+
+static inline void addPass(legacy::PassManagerBase &PM, Pass *P) {
+  // Add the pass to the pass manager...
+  PM.add(P);
+
+  // If we are verifying all of the intermediate steps, add the verifier...
+  if (VerifyEach)
+    PM.add(createVerifierPass());
+}
+
 
 //----------------------------------
 
@@ -145,9 +157,10 @@ int main(int argc, char** argv) {
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context);
 
   if (printInputProgram) {
-    debug() << "==========================================="
-            << "Input Bitcode Program: \n";
-    // M->print (llvm::outs());
+    debug() << "===========================================\n"
+            << "Input Bitcode Program: \n\n";
+    M->print (debug(), nullptr);
+    debug() << "\n";
   }
 
   // Initialization
@@ -159,17 +172,17 @@ int main(int argc, char** argv) {
   FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
 
   // Add module passes
-  ModulePasses.add(new InitGlobal());
-  ModulePasses.add(new ElimUnusedAuxFunction());
-  ModulePasses.add(new InlineSimpleFunction());
-  ModulePasses.add(new ElimUnusedGlobal());
+  addPass(ModulePasses, new InitGlobal());
+  addPass(ModulePasses, new ElimUnusedAuxFunction());
+  addPass(ModulePasses, new InlineSimpleFunction());
+  addPass(ModulePasses, new ElimUnusedGlobal());
 
   // Add function passes
-  FuncPasses->add(new DominatorTreeWrapperPass());
-  FuncPasses->add(new ElimAllocaStoreLoad());
-  FuncPasses->add(new UninlineInstruction());
-  FuncPasses->add(new CombineGEP());
-  FuncPasses->add(new ElimIdenticalInstrs());
+  addPass(*FuncPasses, new DominatorTreeWrapperPass());
+  addPass(*FuncPasses, new ElimAllocaStoreLoad());
+  addPass(*FuncPasses, new UninlineInstruction());
+  addPass(*FuncPasses, new CombineGEP());
+  addPass(*FuncPasses, new ElimIdenticalInstrs());
 
   // Run module passes
   ModulePasses.run(*M);
@@ -177,6 +190,13 @@ int main(int argc, char** argv) {
   // Run function passes
   for (Function &F: *M) {
     FuncPasses->run(F);
+  }
+
+  if (printOutputProgram) {
+    debug() << "===========================================\n"
+            << "Output Bitcode Program: \n\n";
+    M->print (debug(), nullptr);
+    debug() << "\n";
   }
 
   return 0;
