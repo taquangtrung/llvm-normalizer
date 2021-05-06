@@ -2,10 +2,9 @@
 
 using namespace llvm;
 
+// initialize external variables
 bool llvm::debugging = false;
-
 bool llvm::printInputProgram = false;
-
 bool llvm::printOutputProgram = false;
 
 raw_ostream &llvm::debug() {
