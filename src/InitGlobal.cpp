@@ -5,9 +5,25 @@ using namespace llvm;
 
 char InitGlobal::ID = 0;
 
-void uninlinePointerInitValue(LLVMContext &ctx, IRBuilder<> *builder,
-    GlobalVariable *global, Constant* initValue, PointerType* initType) {
+void InitGlobal::uninlineConstantExpr(IRBuilder<> *builder, Instruction *instr) {
+  // transform ConstantExpr in operands into new instructions
+  for (int i = 0; i < instr->getNumOperands(); i++) {
+    Value *operand = instr->getOperand(i);
+    if (ConstantExpr *expr = dyn_cast<ConstantExpr>(operand)) {
+      Instruction *exprInstr = expr->getAsInstruction();
+      uninlineConstantExpr(builder, exprInstr);
+      builder->Insert(exprInstr);
+      instr->setOperand(i, exprInstr);
+    }
+  }
+}
 
+
+void InitGlobal::uninlinePointerInitValue(LLVMContext &ctx,
+                                          IRBuilder<> *builder,
+                                          GlobalVariable *global,
+                                          Constant* initValue,
+                                          PointerType* initType) {
   debug() << "++ Processing Pointer Global: " << *global << "\n";
   debug() << "   Init value: " << *initValue << "\n";
   debug() << "   Init value type: " << *(initValue->getType()) << "\n";
@@ -28,8 +44,11 @@ void uninlinePointerInitValue(LLVMContext &ctx, IRBuilder<> *builder,
   }
 }
 
-void uninlineAggregateInitValue(LLVMContext &ctx, IRBuilder<> *builder,
-    GlobalVariable *global, std::vector<Value*> gepIdxs, Constant* initValue) {
+void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
+                                            IRBuilder<> *builder,
+                                            GlobalVariable *global,
+                                            std::vector<Value*> gepIdxs,
+                                            Constant* initValue) {
   // debug() << "++ Processing Aggregate Global: " << *global << "\n"
   //         << "   Current indices: ";
   // for (Value* idx: gepIdxs) {
@@ -46,12 +65,15 @@ void uninlineAggregateInitValue(LLVMContext &ctx, IRBuilder<> *builder,
   if (ConstantExpr *exprInit = dyn_cast<ConstantExpr>(initValue)) {
     // then initialize this field in the global initialization function
     Instruction *exprInstr = exprInit->getAsInstruction();
+    uninlineConstantExpr(builder, exprInstr);
     builder->Insert(exprInstr);
     ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
     Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
     // debug() << "   New GepInst: " << *gepInst << "\n";
     builder->Insert(gepInst);
-    Instruction* storeInst = new StoreInst(exprInstr, gepInst, gepInst);
+    Align align = global->getAlign().getValue();
+    Instruction* storeInst = new StoreInst(exprInstr, gepInst,
+                                           false, align, gepInst);x
     builder->Insert(storeInst);
   }
 
@@ -116,8 +138,9 @@ void uninlineAggregateInitValue(LLVMContext &ctx, IRBuilder<> *builder,
  * Init global variables capture in ‘llvm.global_ctors‘
  * See https://releases.llvm.org/6.0.1/docs/LangRef.html
  */
-void invokeGlobalInitFunctions(IRBuilder<> *builder, GlobalVariable *global,
-    Constant* initValue) {
+void InitGlobal::invokeGlobalInitFunctions(IRBuilder<> *builder,
+                                           GlobalVariable *global,
+                                           Constant* initValue) {
   vector<pair<int, Function*>> prioFuncs;
 
   for (int i = 0; i < initValue->getNumOperands(); i++) {

@@ -13,7 +13,7 @@ char UninlineInstruction::ID = 0;
 /*
  * Un-inline ConstExpr in instructions, recursively
  */
-void uninlineConstExpr(IRBuilder<> *builder, Instruction *instr) {
+void uninlineConstantExpr(IRBuilder<> *builder, Instruction *instr) {
 
   // transform ConstantExpr in operands into new instructions
   for (int i = 0; i < instr->getNumOperands(); i++) {
@@ -41,7 +41,7 @@ void uninlineConstExpr(IRBuilder<> *builder, Instruction *instr) {
       builder->Insert(exprInstr);
       instr->setOperand(i, exprInstr);
 
-      uninlineConstExpr(builder, exprInstr);
+      uninlineConstantExpr(builder, exprInstr);
     }
   }
 }
@@ -58,7 +58,7 @@ bool UninlineInstruction::runOnFunction(Function &F) {
     IRBuilder<> builder(&B);
 
     for (Instruction &I: B){
-      uninlineConstExpr(&builder, &I);
+      uninlineConstantExpr(&builder, &I);
     }
   }
 

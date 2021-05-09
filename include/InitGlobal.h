@@ -26,6 +26,17 @@ struct InitGlobal : public ModulePass {
   InitGlobal() : ModulePass(ID) {}
 
   virtual bool runOnModule(Module &M) override;
-};
 
+private:
+  void uninlineConstantExpr(IRBuilder<>*, Instruction*);
+
+  void uninlinePointerInitValue(LLVMContext&, IRBuilder<>*,
+                                GlobalVariable*, Constant*, PointerType*);
+
+  void uninlineAggregateInitValue(LLVMContext&, IRBuilder<>*, GlobalVariable*,
+                                  std::vector<Value*>, Constant*);
+
+  void invokeGlobalInitFunctions(IRBuilder<>*, GlobalVariable*, Constant*);
+
+};
 } // namespace discover
