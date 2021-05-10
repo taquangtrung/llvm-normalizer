@@ -50,8 +50,9 @@ void uninlineConstantExpr(IRBuilder<> *builder, Instruction *instr) {
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool UninlineInstruction::runOnFunction(Function &F) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Function Pass <Uninline Instructions> on: "
+          << "Running Function Pass <" << passName << "> on: "
           << F.getName() << "\n";
 
   for (BasicBlock &B: F.getBasicBlockList()){
@@ -61,6 +62,8 @@ bool UninlineInstruction::runOnFunction(Function &F) {
       uninlineConstantExpr(&builder, &I);
     }
   }
+
+  debug() << "Finish Function Pass: " << passName << "\n";
 
   return true;
 }

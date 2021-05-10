@@ -123,8 +123,9 @@ bool InlineSimpleFunction::inlineFunction(Module &M, Function* F) {
 }
 
 bool InlineSimpleFunction::runOnModule(Module &M) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Module Pass: Inline Simple Functions\n";
+          << "Running Module Pass: " << passName << "\n";
 
   FunctionSet attemptedFuncs = FunctionSet();
 
@@ -137,6 +138,8 @@ bool InlineSimpleFunction::runOnModule(Module &M) {
     if (!inlineFunction(M, F))
       attemptedFuncs.insert(F);
   }
+
+  debug() << "Finish Module Pass: " << passName << "\n";
 
   return true;
 }

@@ -196,6 +196,7 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
                 << "      by: " << *keepInst << " in " << keepInst->getFunction()->getName() << "\n";
         llvm::replaceOperand(&F, otherInst, keepInst);
         otherInst->removeFromParent();
+        otherInst->deleteValue();
       // }
       }
     }
@@ -206,8 +207,9 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool ElimIdenticalInstrs::runOnFunction(Function &F) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Function Pass <Eliminate Identical Instructions> on: "
+          << "Running Function Pass <" << passName << "> on: "
           << F.getName() << "\n";
 
   DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
@@ -223,6 +225,8 @@ bool ElimIdenticalInstrs::runOnFunction(Function &F) {
   // find and eliminate identical GetElementPtrInst
   IdentInstsList identGEPList = findGEPOfSameElemPtr(F);
   eliminateIdenticalInstrs(F, DT, identGEPList);
+
+  debug() << "Finish Function Pass: " << passName << "\n";
 
   return true;
 }

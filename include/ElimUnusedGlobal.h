@@ -31,10 +31,6 @@ struct ElimUnusedGlobal : public ModulePass {
   static char ID;
   ElimUnusedGlobal() : ModulePass(ID) {}
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<DominatorTreeWrapperPass>();
-  }
-
   virtual bool runOnModule(Module &M) override;
 };
 

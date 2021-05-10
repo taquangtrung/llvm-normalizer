@@ -30,20 +30,26 @@ void removeAllocaStoreLoad(Function &F,
     StoreInst* storeInst = std::get<1>(instrTuple);
     std::vector<LoadInst*> loadInsts = std::get<2>(instrTuple);
 
-    // debug() << "- Elim AllocaInst: " << *allocInst << "\n";
+    debug() << "- Elim AllocaInst: " << *allocInst << "\n";
 
     Value* storeSrc = storeInst->getOperand(0);
 
     for (auto it = loadInsts.begin(); it != loadInsts.end(); it++) {
       LoadInst* loadInst = *it;
-      // debug() << "   replace: " << *loadInst << "\n"
-      //         << "      by: " << *storeSrc << "\n";
+      debug() << "   replace: " << *loadInst << "\n"
+              << "      by: " << *storeSrc << "\n";
       llvm::replaceOperand(&F, loadInst, storeSrc);
       loadInst->removeFromParent();
+      loadInst->deleteValue();
     }
 
     storeInst->removeFromParent();
+    storeInst->deleteValue();
+
     allocInst->removeFromParent();
+    allocInst->deleteValue();
+
+    // debug() << "Output function:\n" << F;
   }
 }
 
@@ -99,11 +105,16 @@ std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
 }
 
 bool ElimAllocaStoreLoad::runOnFunction(Function &F) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Function Pass <Eliminate Alloca/Store/Load> on: "
+          << "Running Function Pass <" << passName << "> on: "
           << F.getName() << "\n";
+
   std::vector<AllocaStoreLoads> instrTupleList = findRemovableAllocaStoreLoad(F);
   removeAllocaStoreLoad(F, instrTupleList);
+
+  debug() << "Finish Function Pass: " << passName << "\n";
+
   return true;
 }
 

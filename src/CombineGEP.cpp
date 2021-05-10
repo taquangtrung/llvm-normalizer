@@ -56,6 +56,7 @@ void combineGEPInstructions(Function& F,
     for (it2 = gepInstList.begin(); it2 != gepInstList.end(); it2++) {
       GetElementPtrInst* instr = *it2;
       instr->removeFromParent();
+      instr->deleteValue();
     }
 
   }
@@ -129,12 +130,16 @@ std::vector<GEPInstList> findCombinableGEPList(Function &F) {
  * Entry function for this FunctionPass, can be used by llvm-opt
  */
 bool CombineGEP::runOnFunction(Function &F) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Function Pass <Combine GetElemPtr> on: "
+          << "Running Function Pass <" << passName << "> on: "
           << F.getName() << "\n";
 
   std::vector<GEPInstList> allGEPList = findCombinableGEPList(F);
   combineGEPInstructions(F, allGEPList);
+
+  debug() << "Finish Function Pass: " << passName << "\n";
+
   return true;
 }
 

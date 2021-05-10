@@ -6,14 +6,9 @@ using namespace llvm;
 char ElimUnusedGlobal::ID = 0;
 
 bool ElimUnusedGlobal::runOnModule(Module &M) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Module Pass: Eliminating Unused Global Variables\n";
-
-  for (Function &F: M) {
-    debug() << "Function: " << F.getName() << "\n";
-    DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
-    debug() << "  DT Root: " << DT.getRoot()->getName() << "\n";
-  }
+          << "Running Module Pass: " << passName << "\n";
 
   GlobalVariableList &globalList = M.getGlobalList();
   SmallSetVector<GlobalVariable*, 16> removableGlobals;
@@ -25,16 +20,19 @@ bool ElimUnusedGlobal::runOnModule(Module &M) {
   for (GlobalVariable *global : removableGlobals) {
     debug() << " - Deleting " << *global << "\n";
     global->removeFromParent();
+    global->deleteValue();
   }
+
+  debug() << "Finish Module Pass: " << passName << "\n";
 
   return true;
 }
 
 static RegisterPass<ElimUnusedGlobal> X("ElimUnusedGlobal",
-    "ElimUnusedGlobal",
-    false /* Only looks at CFG */,
-    true /* Analysis Pass */);
+                                        "ElimUnusedGlobal",
+                                        false /* Only looks at CFG */,
+                                        true /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
-      PM.add(new ElimUnusedGlobal());});
+                                [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM)
+                                {PM.add(new ElimUnusedGlobal());});

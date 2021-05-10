@@ -31,6 +31,8 @@ void InitGlobal::uninlinePointerInitValue(LLVMContext &ctx,
   if (initValue->isNullValue())
     return;
 
+  Align align = global->getAlign().getValue();
+
   // then initialize this field in the global initialization function
   // Instruction* loadInst = new LoadInst(global);
   // builder.Insert(loadInst);
@@ -39,7 +41,7 @@ void InitGlobal::uninlinePointerInitValue(LLVMContext &ctx,
     builder->Insert(exprInstr);
     global->setOperand(0, ConstantPointerNull::get(initType));
     // debug() << "      New init value: " << *initValue << "\n";
-    Instruction* storeInst = new StoreInst(exprInstr, global, exprInstr);
+    Instruction* storeInst = new StoreInst(exprInstr, global, false, align);
     builder->Insert(storeInst);
   }
 }
@@ -61,6 +63,8 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
   if (initValue->isNullValue() || initValue->isZeroValue())
     return;
 
+  Align align = global->getAlign().getValue();
+
   // ConstExpr
   if (ConstantExpr *exprInit = dyn_cast<ConstantExpr>(initValue)) {
     // then initialize this field in the global initialization function
@@ -68,12 +72,10 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
     uninlineConstantExpr(builder, exprInstr);
     builder->Insert(exprInstr);
     ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
-    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
-    // debug() << "   New GepInst: " << *gepInst << "\n";
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs, "gep");
+    // debug() << "   New GepInst1: " << *gepInst << "\n";
     builder->Insert(gepInst);
-    Align align = global->getAlign().getValue();
-    Instruction* storeInst = new StoreInst(exprInstr, gepInst,
-                                           false, align, gepInst);x
+    Instruction* storeInst = new StoreInst(exprInstr, gepInst, false, align);
     builder->Insert(storeInst);
   }
 
@@ -82,10 +84,10 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
            isa<Function>(initValue) ||
            isa<GlobalVariable>(initValue)) {
     ArrayRef<Value*> idxs = (ArrayRef<Value*>)gepIdxs;
-    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs);
-    // debug() << "   New GepInst: " << *gepInst << "\n";
+    Instruction* gepInst = GetElementPtrInst::CreateInBounds(global, idxs, "gep");
+    // debug() << "   New GepInst2: " << *gepInst << "\n";
     builder->Insert(gepInst);
-    Instruction* storeInst = new StoreInst(initValue, gepInst, gepInst);
+    Instruction* storeInst = new StoreInst(initValue, gepInst, false, align);
     builder->Insert(storeInst);
   }
 
@@ -171,8 +173,9 @@ void InitGlobal::invokeGlobalInitFunctions(IRBuilder<> *builder,
 }
 
 bool InitGlobal::runOnModule(Module &M) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Module Pass: Initialize Global Variables\n";
+          << "Running Module Pass: " << passName << "\n";
 
   GlobalVariableList &globalList = M.getGlobalList();
   LLVMContext &ctx = M.getContext();
@@ -224,6 +227,7 @@ bool InitGlobal::runOnModule(Module &M) {
     funcList.push_front(funcInit);
   }
 
+  debug() << "Finish Module Pass: " << passName << "\n";
 
   return true;
 }

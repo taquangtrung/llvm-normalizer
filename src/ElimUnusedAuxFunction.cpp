@@ -6,8 +6,9 @@ using namespace llvm;
 char ElimUnusedAuxFunction::ID = 0;
 
 bool ElimUnusedAuxFunction::runOnModule(Module &M) {
+  StringRef passName = this->getPassName();
   debug() << "=========================================\n"
-          << "Running Module Pass: Eliminating Unused Auxiliary Functions\n";
+          << "Running Module Pass: " << passName << "\n";
 
   FunctionList &funcList = M.getFunctionList();
 
@@ -33,10 +34,12 @@ bool ElimUnusedAuxFunction::runOnModule(Module &M) {
     // outs() << "Remove function: " << func->getName() << "\n";
 
     func->removeFromParent();
+    // func->deleteValue();
   }
 
-  return true;
+  debug() << "Finish Module Pass: " << passName << "\n";
 
+  return true;
 }
 
 bool ElimUnusedAuxFunction::normalizeModule(Module &M) {

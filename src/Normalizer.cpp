@@ -123,15 +123,35 @@ static cl::opt<bool> PrintOutputProgram("pop",
     cl::desc("Enable printing input program"),
     cl::cat(DiscoverNormalizerCategory));
 
+static cl::opt<bool> PrintOutputEach("print-output-each",
+                                     cl::desc("Print output program after each pass"),
+                                     cl::cat(DiscoverNormalizerCategory));
+
 //------------------------------
 
-static inline void addPass(legacy::PassManagerBase &PM, Pass *P) {
+static inline void addModulePass(legacy::PassManagerBase &PM, ModulePass *P) {
   // Add the pass to the pass manager...
   PM.add(P);
 
   // If we are verifying all of the intermediate steps, add the verifier...
   if (VerifyEach)
     PM.add(createVerifierPass());
+
+  if (PrintOutputEach)
+    PM.add(createPrintModulePass(outs()));
+}
+
+
+static inline void addFunctionPass(legacy::PassManagerBase &PM, FunctionPass *P) {
+  // Add the pass to the pass manager...
+  PM.add(P);
+
+  // If we are verifying all of the intermediate steps, add the verifier...
+  if (VerifyEach)
+    PM.add(createVerifierPass());
+
+  if (PrintOutputEach)
+    PM.add(createPrintFunctionPass(outs()));
 }
 
 
@@ -172,25 +192,27 @@ int main(int argc, char** argv) {
   FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
 
   // Add module passes
-  addPass(ModulePasses, new InitGlobal());
-  addPass(ModulePasses, new ElimUnusedAuxFunction());
-  addPass(ModulePasses, new InlineSimpleFunction());
-  addPass(ModulePasses, new ElimUnusedGlobal());
+  addModulePass(ModulePasses, new InitGlobal());
+  addModulePass(ModulePasses, new ElimUnusedAuxFunction());
+  addModulePass(ModulePasses, new InlineSimpleFunction());
+  addModulePass(ModulePasses, new ElimUnusedGlobal());
 
   // Add function passes
-  addPass(*FuncPasses, new DominatorTreeWrapperPass());
-  addPass(*FuncPasses, new ElimAllocaStoreLoad());
-  addPass(*FuncPasses, new UninlineInstruction());
-  addPass(*FuncPasses, new CombineGEP());
-  addPass(*FuncPasses, new ElimIdenticalInstrs());
+  addFunctionPass(*FuncPasses, new DominatorTreeWrapperPass());
+  addFunctionPass(*FuncPasses, new ElimAllocaStoreLoad());
+  addFunctionPass(*FuncPasses, new UninlineInstruction());
+  addFunctionPass(*FuncPasses, new CombineGEP());
+  addFunctionPass(*FuncPasses, new ElimIdenticalInstrs());
 
   // Run module passes
   ModulePasses.run(*M);
 
   // Run function passes
+  FuncPasses->doInitialization();
   for (Function &F: *M) {
     FuncPasses->run(F);
   }
+  FuncPasses->doFinalization();
 
   if (printOutputProgram) {
     debug() << "===========================================\n"
