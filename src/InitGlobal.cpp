@@ -126,9 +126,11 @@ void InitGlobal::uninlineAggregateInitValue(LLVMContext &ctx,
       std::vector<Value*> currentIdxs(gepIdxs);
       currentIdxs.push_back(elemIdx);
 
-      if (PointerType* elemTyp = dyn_cast<PointerType>(elemInit->getType()))
-        arrayInit->setOperand(i, ConstantPointerNull::get(elemTyp));
-      else if (IntegerType* intTyp = dyn_cast<IntegerType>(elemTyp))
+      Type *elemInitTyp = elemInit->getType();
+
+      if (PointerType* ptrTyp = dyn_cast<PointerType>(elemInitTyp))
+        arrayInit->setOperand(i, ConstantPointerNull::get(ptrTyp));
+      else if (IntegerType* intTyp = dyn_cast<IntegerType>(elemInitTyp))
         arrayInit->setOperand(i, ConstantInt::get(intTyp, 0));
 
       uninlineAggregateInitValue(ctx, builder, global, currentIdxs, elemInit);
@@ -232,7 +234,7 @@ bool InitGlobal::runOnModule(Module &M) {
   return true;
 }
 
-static RegisterPass<InitGlobal> X("InitGlobal", "Normalize Globals",
+static RegisterPass<InitGlobal> X("InitGlobal", "InitGlobal",
                                   false /* Only looks at CFG */,
                                   false /* Analysis Pass */);
 
