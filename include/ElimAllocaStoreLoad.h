@@ -20,12 +20,19 @@ using namespace llvm;
 
 namespace discover {
 
+using ASLInstrs = std::tuple<AllocaInst*, StoreInst*, std::vector<LoadInst*>>;
+
 struct ElimAllocaStoreLoad : public FunctionPass {
   static char ID;
 
   ElimAllocaStoreLoad() : FunctionPass(ID) {}
-
   virtual bool runOnFunction(Function &F) override;
+
+private:
+
+  void removeAllocaStoreLoad(Function&, std::vector<ASLInstrs>);
+  std::vector<ASLInstrs> findRemovableAllocaStoreLoad(Function&);
+
 };
 
 } // namespace discover

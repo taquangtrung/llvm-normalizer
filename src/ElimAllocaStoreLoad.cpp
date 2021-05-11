@@ -19,18 +19,17 @@ using namespace llvm;
 
 char ElimAllocaStoreLoad::ID = 0;
 
-using AllocaStoreLoads = std::tuple<AllocaInst*, StoreInst*, std::vector<LoadInst*>>;
-
-void removeAllocaStoreLoad(Function &F,
-                           std::vector<AllocaStoreLoads> allocaStoreLoadList) {
-  for (auto it = allocaStoreLoadList.begin(); it != allocaStoreLoadList.end(); it++) {
-    AllocaStoreLoads instrTuple = *it;
+void ElimAllocaStoreLoad::removeAllocaStoreLoad(Function &F,
+                                                std::vector<ASLInstrs> ASLList) {
+  for (auto it = ASLList.begin(); it != ASLList.end(); it++) {
+    ASLInstrs instrTuple = *it;
 
     AllocaInst* allocInst = std::get<0>(instrTuple);
     StoreInst* storeInst = std::get<1>(instrTuple);
     std::vector<LoadInst*> loadInsts = std::get<2>(instrTuple);
 
     debug() << "- Elim AllocaInst: " << *allocInst << "\n";
+    debug() << "  StoreInst: " << *storeInst << "\n";
 
     Value* storeSrc = storeInst->getOperand(0);
 
@@ -53,8 +52,8 @@ void removeAllocaStoreLoad(Function &F,
   }
 }
 
-std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
-  std::vector<AllocaStoreLoads> candidateAllocaStoreLoadList;
+std::vector<ASLInstrs> ElimAllocaStoreLoad::findRemovableAllocaStoreLoad(Function &F) {
+  std::vector<ASLInstrs> candidateAllocaStoreLoadList;
 
   BasicBlockList &BS = F.getBasicBlockList();
 
@@ -95,7 +94,7 @@ std::vector<AllocaStoreLoads> findRemovableAllocaStoreLoad(Function &F) {
       }
 
       if (hasOnlyStoreDstLoad && numStoreInst == 1 && numLoadInst > 0) {
-        AllocaStoreLoads candidate = std::make_tuple(allocInst, storeInst, loadInsts);
+        ASLInstrs candidate = std::make_tuple(allocInst, storeInst, loadInsts);
         candidateAllocaStoreLoadList.push_back(candidate);
       }
     }
@@ -110,10 +109,16 @@ bool ElimAllocaStoreLoad::runOnFunction(Function &F) {
           << "Running Function Pass <" << passName << "> on: "
           << F.getName() << "\n";
 
-  std::vector<AllocaStoreLoads> instrTupleList = findRemovableAllocaStoreLoad(F);
+  if (F.getName().equals("parse_shell_options"))
+    debug() << "Input function: " << F << "\n";
+
+  std::vector<ASLInstrs> instrTupleList = findRemovableAllocaStoreLoad(F);
   removeAllocaStoreLoad(F, instrTupleList);
 
   debug() << "Finish Function Pass: " << passName << "\n";
+
+  if (F.getName().equals("parse_shell_options"))
+    debug() << "Output function: " << F << "\n";
 
   return true;
 }
