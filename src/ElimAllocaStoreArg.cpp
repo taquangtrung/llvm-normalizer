@@ -1,26 +1,26 @@
-#include "ElimAllocaStoreLoad.h"
+#include "ElimAllocaStoreArg.h"
 
 using namespace discover;
 using namespace llvm;
 
 /*
  * This pass eliminates a sequence of  Alloca, Load, Store instructions
- * that only serves as temporary data holder:
+ * that only serves as temporary data holder of function arguments:
  *
  * For example:
  *     u = alloca int*
- *     store i, u
+ *     store arg, u
  *     x = load b
  *
  * Then the above instructions can be removed, and every appearance of `x`
- * can be replaced by `i`
+ * can be replaced by `arg`
  */
 
 
-char ElimAllocaStoreLoad::ID = 0;
+char ElimAllocaStoreArg::ID = 0;
 
-void ElimAllocaStoreLoad::removeAllocaStoreLoad(Function &F,
-                                                std::vector<ASLInstrs> ASLList) {
+void ElimAllocaStoreArg::removeAllocaStoreArg(Function &F,
+                                              std::vector<ASLInstrs> ASLList) {
   for (auto it = ASLList.begin(); it != ASLList.end(); it++) {
     ASLInstrs instrTuple = *it;
 
@@ -52,8 +52,8 @@ void ElimAllocaStoreLoad::removeAllocaStoreLoad(Function &F,
   }
 }
 
-std::vector<ASLInstrs> ElimAllocaStoreLoad::findRemovableAllocaStoreLoad(Function &F) {
-  std::vector<ASLInstrs> candidateAllocaStoreLoadList;
+std::vector<ASLInstrs> ElimAllocaStoreArg::findAllocaStoreArg(Function &F) {
+  std::vector<ASLInstrs> candidateAllocaStoreArgList;
 
   BasicBlockList &BS = F.getBasicBlockList();
 
@@ -68,67 +68,69 @@ std::vector<ASLInstrs> ElimAllocaStoreLoad::findRemovableAllocaStoreLoad(Functio
       StoreInst *storeInst;
       std::vector<LoadInst*> loadInsts;
 
-      bool hasOnlyStoreDstLoad = true;
+      bool isStoreLoadArgOnly = true;
       int numStoreInst = 0;
       int numLoadInst = 0;
 
       for (auto it = allocInst->user_begin(); it != allocInst->user_end(); it++) {
-        Value *instUser = *it;
+        Value *allocUser = *it;
         // debug() << "  user: " << *it->getUser() << "\n";
 
-        if (storeInst = dyn_cast<StoreInst>(instUser)) {
-          if (storeInst->getOperand(1) != allocInst)
-            hasOnlyStoreDstLoad = false;
+        if (storeInst = dyn_cast<StoreInst>(allocUser)) {
+          if (!isa<Argument>(storeInst->getOperand(0)) ||
+              storeInst->getOperand(1) != allocInst)
+            isStoreLoadArgOnly = false;
           // debug() << "  StoreInst: " << *storeInst << "\n";
           numStoreInst++;
         }
-        else if (LoadInst *loadInst = dyn_cast<LoadInst>(instUser)) {
+        else if (LoadInst *loadInst = dyn_cast<LoadInst>(allocUser)) {
           // debug() << "  LoadInst: " << *loadInst << "\n";
           loadInsts.push_back(loadInst);
           numLoadInst++;
         }
         else {
-          hasOnlyStoreDstLoad = false;
+          isStoreLoadArgOnly = false;
           break;
         }
       }
 
-      if (hasOnlyStoreDstLoad && numStoreInst == 1 && numLoadInst > 0) {
+      if (isStoreLoadArgOnly && numStoreInst == 1 && numLoadInst > 0) {
         ASLInstrs candidate = std::make_tuple(allocInst, storeInst, loadInsts);
-        candidateAllocaStoreLoadList.push_back(candidate);
+        candidateAllocaStoreArgList.push_back(candidate);
       }
     }
   }
 
-  return candidateAllocaStoreLoadList;
+  return candidateAllocaStoreArgList;
 }
 
-bool ElimAllocaStoreLoad::runOnFunction(Function &F) {
+bool ElimAllocaStoreArg::runOnFunction(Function &F) {
   StringRef passName = this->getPassName();
   debug() << "=========================================\n"
           << "Running Function Pass <" << passName << "> on: "
           << F.getName() << "\n";
 
-  if (F.getName().equals("parse_shell_options"))
-    debug() << "Input function: " << F << "\n";
+  // if (F.getName().equals("parse_shell_options"))
+  //   debug() << "Input function: " << F << "\n";
 
-  std::vector<ASLInstrs> instrTupleList = findRemovableAllocaStoreLoad(F);
-  removeAllocaStoreLoad(F, instrTupleList);
+  std::vector<ASLInstrs> instrTupleList = findAllocaStoreArg(F);
+  removeAllocaStoreArg(F, instrTupleList);
 
   debug() << "Finish Function Pass: " << passName << "\n";
 
-  if (F.getName().equals("parse_shell_options"))
-    debug() << "Output function: " << F << "\n";
+  // if (F.getName().equals("parse_shell_options"))
+  //   debug() << "Output function: " << F << "\n";
 
   return true;
 }
 
-static RegisterPass<ElimAllocaStoreLoad> X("ElimAllocaStoreLoad",
-    "ElimAllocaStoreLoad Pass",
-    false /* Only looks at CFG */,
-    false /* Analysis Pass */);
+static RegisterPass<ElimAllocaStoreArg> X("ElimAllocaStoreArg",
+                                          "ElimAllocaStoreArg",
+                                          false /* Only looks at CFG */,
+                                          false /* Analysis Pass */);
 
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
-    [](const PassManagerBuilder &Builder, legacy::PassManagerBase &PM) {
-      PM.add(new ElimAllocaStoreLoad());
-    });
+                                [](const PassManagerBuilder &Builder,
+                                   legacy::PassManagerBase &PM) {
+                                  PM.add(new ElimAllocaStoreArg());
+                                });

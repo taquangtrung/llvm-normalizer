@@ -231,6 +231,8 @@ bool InitGlobal::runOnModule(Module &M) {
 
   debug() << "Finish Module Pass: " << passName << "\n";
 
+  debug() << "Function init globals: \n" << *funcInit;
+
   return true;
 }
 

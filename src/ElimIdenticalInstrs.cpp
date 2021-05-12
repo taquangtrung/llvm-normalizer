@@ -190,14 +190,14 @@ void eliminateIdenticalInstrs(Function &F, DominatorTree &DT, IdentInstsList ide
 
     for (auto it2 = otherInsts.begin(); it2 != otherInsts.end(); it2++) {
       Instruction *otherInst = *it2;
-      if (isPotentiallyReachable(keepInst, otherInst)) {
-      // if (DT.dominates(keepInst, otherInst)) {
-        debug() << " replace: " << *otherInst << " in " << otherInst->getFunction()->getName() << "\n"
-                << "      by: " << *keepInst << " in " << keepInst->getFunction()->getName() << "\n";
+      if (DT.dominates(keepInst, otherInst)) {
+        debug() << " replace: " << *otherInst
+                << " in " << otherInst->getFunction()->getName() << "\n"
+                << "      by: " << *keepInst
+                << " in " << keepInst->getFunction()->getName() << "\n";
         llvm::replaceOperand(&F, otherInst, keepInst);
         otherInst->removeFromParent();
         otherInst->deleteValue();
-      // }
       }
     }
   }

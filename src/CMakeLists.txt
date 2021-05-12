@@ -6,7 +6,7 @@ set(SOURCE_FILES
   ElimUnusedAuxFunction.cpp
   ElimUnusedGlobal.cpp
   ElimIdenticalInstrs.cpp
-  ElimAllocaStoreLoad.cpp
+  ElimAllocaStoreArg.cpp
   CombineGEP.cpp
   InitGlobal.cpp
   UninlineInstruction.cpp)

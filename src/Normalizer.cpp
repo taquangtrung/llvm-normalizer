@@ -30,7 +30,7 @@
 #include "ElimUnusedGlobal.h"
 #include "ElimIdenticalInstrs.h"
 #include "CombineGEP.h"
-#include "ElimAllocaStoreLoad.h"
+#include "ElimAllocaStoreArg.h"
 
 using namespace std;
 using namespace llvm;
@@ -94,34 +94,39 @@ public:
 
 // Use an OptionCategory to store all the flags of this tool
 cl::OptionCategory DiscoverNormalizerCategory("LLVM Discover Normalizer Options",
-    "Options for the LLVM-normalizer tool of the project Discover.");
+                                              "Options for the LLVM-normalizer tool of the project Discover.");
 
-static cl::opt<std::string> InputFilename(cl::Positional,
-    cl::desc("<Input bitcode file>"), cl::init("-"), cl::value_desc("filename"));
+static cl::opt<string> InputFilename(cl::Positional,
+                                     cl::desc("<Input bitcode file>"),
+                                     cl::init("-"), cl::value_desc("filename"));
 
-static cl::opt<std::string> OutputFilename("o",
-    cl::desc("<Output bitcode file>"), cl::value_desc("filename"),
-    cl::cat(DiscoverNormalizerCategory));
+static cl::opt<string> OutputFilename("o",
+                                      cl::desc("<Output bitcode file>"),
+                                      cl::value_desc("filename"),
+                                      cl::cat(DiscoverNormalizerCategory));
 
 static cl::opt<bool> NoVerify("disable-verify",
-    cl::desc("Do not run the verifier"), cl::Hidden);
+                              cl::desc("Do not run the verifier"), cl::Hidden);
 
 static cl::opt<bool> VerifyEach("verify-each",
-    cl::desc("Verify after each transform"));
+                                cl::desc("Verify after each transform"));
+
+static cl::opt<bool> VerifyOnly("verify-only",
+                                cl::desc("Only verify, not transform bitcode"));
 
 static cl::opt<bool> DisableInline("disable-inlining",
-    cl::desc("Do not run the inliner pass"));
+                                   cl::desc("Do not run the inliner pass"));
 
 static cl::opt<bool> Debugging("debug", cl::desc("Enable debugging"),
-    cl::cat(DiscoverNormalizerCategory));
+                               cl::cat(DiscoverNormalizerCategory));
 
 static cl::opt<bool> PrintInputProgram("pip",
-    cl::desc("Enable printing input program"),
-    cl::cat(DiscoverNormalizerCategory));
+                                       cl::desc("Enable printing input program"),
+                                       cl::cat(DiscoverNormalizerCategory));
 
 static cl::opt<bool> PrintOutputProgram("pop",
-    cl::desc("Enable printing input program"),
-    cl::cat(DiscoverNormalizerCategory));
+                                        cl::desc("Enable printing input program"),
+                                        cl::cat(DiscoverNormalizerCategory));
 
 static cl::opt<bool> PrintOutputEach("print-output-each",
                                      cl::desc("Print output program after each pass"),
@@ -191,18 +196,22 @@ int main(int argc, char** argv) {
   std::unique_ptr<legacy::FunctionPassManager> FuncPasses;
   FuncPasses.reset(new legacy::FunctionPassManager(M.get()));
 
-  // Add module passes
-  addModulePass(ModulePasses, new InitGlobal());
-  addModulePass(ModulePasses, new ElimUnusedAuxFunction());
-  addModulePass(ModulePasses, new InlineSimpleFunction());
-  addModulePass(ModulePasses, new ElimUnusedGlobal());
+  if (VerifyOnly)
+    ModulePasses.add(createVerifierPass());
 
-  // Add function passes
-  addFunctionPass(*FuncPasses, new DominatorTreeWrapperPass());
-  addFunctionPass(*FuncPasses, new ElimAllocaStoreLoad());
-  addFunctionPass(*FuncPasses, new UninlineInstruction());
-  addFunctionPass(*FuncPasses, new CombineGEP());
-  addFunctionPass(*FuncPasses, new ElimIdenticalInstrs());
+  if (!VerifyOnly) {
+    // Add module passes
+    addModulePass(ModulePasses, new InitGlobal());
+    addModulePass(ModulePasses, new ElimUnusedAuxFunction());
+    addModulePass(ModulePasses, new InlineSimpleFunction());
+    addModulePass(ModulePasses, new ElimUnusedGlobal());
+
+    // Add function passes
+    addFunctionPass(*FuncPasses, new ElimAllocaStoreArg());
+    addFunctionPass(*FuncPasses, new UninlineInstruction());
+    addFunctionPass(*FuncPasses, new CombineGEP());
+    addFunctionPass(*FuncPasses, new ElimIdenticalInstrs());
+  }
 
   // Run module passes
   ModulePasses.run(*M);
