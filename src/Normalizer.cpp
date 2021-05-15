@@ -230,5 +230,13 @@ int main(int argc, char** argv) {
     debug() << "\n";
   }
 
+  // write output
+  if (!OutputFilename.empty()) {
+    std::error_code EC;
+    raw_fd_ostream OS(OutputFilename, EC, llvm::sys::fs::F_None);
+    WriteBitcodeToFile(*M, OS);
+    OS.flush();
+  }
+
   return 0;
 }
