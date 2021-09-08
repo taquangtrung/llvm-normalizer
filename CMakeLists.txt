@@ -31,21 +31,22 @@ set(
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
 # Set LLVM version
-set(LLVM_VERSION 11)
+set(LLVM_VERSION 11.1)
 message (STATUS "Looking for LLVM ${LLVM_VERSION}")
 
 # Set LLVM preferred path
 set(LLVM_CMAKE_PATH_HINTS
-  # Linux
-  "/usr/lib/llvm/lib/cmake/llvm/"
-  "/usr/lib/llvm-8/lib/cmake/llvm/"
-  "/usr/lib/llvm-10/lib/cmake/llvm/"
+  ## Linux
+  "/home/trungtq/llvm/llvm-11/lib/cmake/llvm"
+  # "/usr/lib/llvm/lib/cmake/llvm/"
+  # "/usr/lib/llvm-8/lib/cmake/llvm/"
+  # "/usr/lib/llvm-10/lib/cmake/llvm/"
   "/usr/lib/llvm-11/lib/cmake/llvm/"
-  # MacOS
-  "/usr/local/opt/llvm/lib/cmake/llvm/"
-  "/usr/local/opt/llvm@8/lib/cmake/llvm/"
-  "/usr/local/opt/llvm@10/lib/cmake/llvm/"
-  "/usr/local/opt/llvm@11/lib/cmake/llvm/"
+  ## MacOS
+  # "/usr/local/opt/llvm/lib/cmake/llvm/"
+  # "/usr/local/opt/llvm@8/lib/cmake/llvm/"
+  # "/usr/local/opt/llvm@10/lib/cmake/llvm/"
+  # "/usr/local/opt/llvm@11/lib/cmake/llvm/"
   )
 
 # config llvm
